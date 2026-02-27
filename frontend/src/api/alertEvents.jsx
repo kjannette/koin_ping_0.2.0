@@ -1,8 +1,7 @@
 // API client for alert event history
 
 import { getAuthHeadersSimple } from './authHeaders';
-
-const API_BASE = '/api';
+import { API_BASE } from './config';
 
 /**
  * Get all alert events (history)

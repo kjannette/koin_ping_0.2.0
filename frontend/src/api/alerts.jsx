@@ -1,8 +1,7 @@
 // API client for alert rule management
 
 import { getAuthHeaders, getAuthHeadersSimple } from './authHeaders';
-
-const API_BASE = '/api';
+import { API_BASE } from './config';
 
 /**
  * Alert types supported by the system

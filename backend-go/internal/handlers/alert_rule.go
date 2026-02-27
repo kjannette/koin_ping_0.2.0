@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/kjannette/koin-ping/backend-go/internal/domain"
@@ -30,15 +31,23 @@ func (h *AlertRuleHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var body struct {
-		Type      string   `json:"type"`
-		Threshold *float64 `json:"threshold"`
+		Type      string          `json:"type"`
+		Threshold json.RawMessage `json:"threshold"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		log.Printf("Failed to decode alert request body: %v", err)
 		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid request body")
 		return
 	}
 
-	log.Printf("User %s creating alert for address ID: %d", userID, addressID)
+	threshold, err := parseThreshold(body.Threshold)
+	if err != nil {
+		log.Printf("Failed to parse threshold: %v", err)
+		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "threshold must be a valid number")
+		return
+	}
+
+	log.Printf("User %s creating alert: type=%s, addressID=%d", userID, body.Type, addressID)
 
 	if body.Type == "" {
 		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Alert type is required")
@@ -57,7 +66,7 @@ func (h *AlertRuleHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	alertType := domain.AlertType(body.Type)
 	if domain.IsThresholdRequired(alertType) {
-		if body.Threshold == nil || *body.Threshold <= 0 {
+		if threshold == nil || *threshold <= 0 {
 			writeError(w, http.StatusBadRequest, "VALIDATION_ERROR",
 				fmt.Sprintf("Alert type '%s' requires a positive threshold value", body.Type))
 			return
@@ -76,7 +85,7 @@ func (h *AlertRuleHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newAlert, err := h.alertRules.Create(r.Context(), addressID, alertType, body.Threshold)
+	newAlert, err := h.alertRules.Create(r.Context(), addressID, alertType, threshold)
 	if err != nil {
 		log.Printf("Error creating alert rule: %v", err)
 		writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to create alert rule")
@@ -85,6 +94,37 @@ func (h *AlertRuleHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Alert rule created with ID: %d", newAlert.ID)
 	writeJSON(w, http.StatusCreated, newAlert)
+}
+
+func parseThreshold(raw json.RawMessage) (*float64, error) {
+	if len(raw) == 0 {
+		return nil, nil
+	}
+
+	// Check null before number -- json.Unmarshal treats null as valid for float64 (sets to 0).
+	if string(raw) == "null" {
+		return nil, nil
+	}
+
+	var asNumber float64
+	if err := json.Unmarshal(raw, &asNumber); err == nil {
+		return &asNumber, nil
+	}
+
+	var asString string
+	if err := json.Unmarshal(raw, &asString); err == nil {
+		asString = strings.TrimSpace(asString)
+		if asString == "" {
+			return nil, nil
+		}
+		parsed, parseErr := strconv.ParseFloat(asString, 64)
+		if parseErr != nil {
+			return nil, parseErr
+		}
+		return &parsed, nil
+	}
+
+	return nil, fmt.Errorf("unsupported threshold format")
 }
 
 func (h *AlertRuleHandler) ListByAddress(w http.ResponseWriter, r *http.Request) {
@@ -136,6 +176,7 @@ func (h *AlertRuleHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) 
 		Enabled *bool `json:"enabled"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		log.Printf("Failed to decode update request body: %v", err)
 		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid request body")
 		return
 	}

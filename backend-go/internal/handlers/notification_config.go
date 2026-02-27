@@ -55,6 +55,7 @@ func (h *NotificationConfigHandler) UpdateConfig(w http.ResponseWriter, r *http.
 		NotificationEnabled *bool   `json:"notification_enabled"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		log.Printf("Failed to decode notification config request body: %v", err)
 		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid request body")
 		return
 	}

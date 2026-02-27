@@ -5,6 +5,7 @@ Copy this to `.env` in the backend directory and fill in your values.
 ```bash
 # Server Configuration
 PORT=3001
+API_BASE_PATH=/v1
 NODE_ENV=development
 
 # Database Configuration

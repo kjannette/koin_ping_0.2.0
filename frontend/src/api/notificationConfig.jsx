@@ -1,8 +1,7 @@
 // API client for notification configuration
 
 import { getAuthHeaders } from './authHeaders';
-
-const API_BASE = '/api';
+import { API_BASE } from './config';
 
 /**
  * Get notification configuration for current user
