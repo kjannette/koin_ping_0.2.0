@@ -44,34 +44,36 @@ func main() {
 	notifConfigHandler := handlers.NewNotificationConfigHandler(notifConfigModel)
 
 	mux := http.NewServeMux()
+	b := cfg.APIBasePath // e.g. "/v1"
 
 	// Public routes
-	mux.HandleFunc("GET /api/health", handlers.HealthCheck)
-	mux.HandleFunc("GET /api/status", handlers.SystemStatus)
+	mux.HandleFunc("GET "+b+"/health", handlers.HealthCheck)
+	mux.HandleFunc("GET "+b+"/status", handlers.SystemStatus)
 
 	// Authenticated routes — addresses
-	mux.Handle("POST /api/addresses", middleware.Authenticate(http.HandlerFunc(addressHandler.Create)))
-	mux.Handle("GET /api/addresses", middleware.Authenticate(http.HandlerFunc(addressHandler.List)))
-	mux.Handle("DELETE /api/addresses/{addressId}", middleware.Authenticate(http.HandlerFunc(addressHandler.Remove)))
+	mux.Handle("POST "+b+"/addresses", middleware.Authenticate(http.HandlerFunc(addressHandler.Create)))
+	mux.Handle("GET "+b+"/addresses", middleware.Authenticate(http.HandlerFunc(addressHandler.List)))
+	mux.Handle("DELETE "+b+"/addresses/{addressId}", middleware.Authenticate(http.HandlerFunc(addressHandler.Remove)))
 
 	// Authenticated routes — alert rules
-	mux.Handle("POST /api/addresses/{addressId}/alerts", middleware.Authenticate(http.HandlerFunc(alertRuleHandler.Create)))
-	mux.Handle("GET /api/addresses/{addressId}/alerts", middleware.Authenticate(http.HandlerFunc(alertRuleHandler.ListByAddress)))
-	mux.Handle("PATCH /api/alerts/{alertId}", middleware.Authenticate(http.HandlerFunc(alertRuleHandler.UpdateStatus)))
-	mux.Handle("DELETE /api/alerts/{alertId}", middleware.Authenticate(http.HandlerFunc(alertRuleHandler.Remove)))
+	mux.Handle("POST "+b+"/addresses/{addressId}/alerts", middleware.Authenticate(http.HandlerFunc(alertRuleHandler.Create)))
+	mux.Handle("GET "+b+"/addresses/{addressId}/alerts", middleware.Authenticate(http.HandlerFunc(alertRuleHandler.ListByAddress)))
+	mux.Handle("PATCH "+b+"/alerts/{alertId}", middleware.Authenticate(http.HandlerFunc(alertRuleHandler.UpdateStatus)))
+	mux.Handle("DELETE "+b+"/alerts/{alertId}", middleware.Authenticate(http.HandlerFunc(alertRuleHandler.Remove)))
 
 	// Authenticated routes — alert events
-	mux.Handle("GET /api/alert-events", middleware.Authenticate(http.HandlerFunc(alertEventHandler.List)))
+	mux.Handle("GET "+b+"/alert-events", middleware.Authenticate(http.HandlerFunc(alertEventHandler.List)))
 
 	// Authenticated routes — notification config
-	mux.Handle("GET /api/notification-config", middleware.Authenticate(http.HandlerFunc(notifConfigHandler.GetConfig)))
-	mux.Handle("PUT /api/notification-config", middleware.Authenticate(http.HandlerFunc(notifConfigHandler.UpdateConfig)))
-	mux.Handle("DELETE /api/notification-config", middleware.Authenticate(http.HandlerFunc(notifConfigHandler.DeleteConfig)))
+	mux.Handle("GET "+b+"/notification-config", middleware.Authenticate(http.HandlerFunc(notifConfigHandler.GetConfig)))
+	mux.Handle("PUT "+b+"/notification-config", middleware.Authenticate(http.HandlerFunc(notifConfigHandler.UpdateConfig)))
+	mux.Handle("DELETE "+b+"/notification-config", middleware.Authenticate(http.HandlerFunc(notifConfigHandler.DeleteConfig)))
 
 	handler := corsMiddleware(mux)
 
 	addr := fmt.Sprintf(":%d", cfg.Port)
 	log.Printf("Server running on port %d", cfg.Port)
+	log.Printf("API base path: %s", cfg.APIBasePath)
 	log.Printf("Environment: %s", cfg.NodeEnv)
 
 	if err := http.ListenAndServe(addr, handler); err != nil {

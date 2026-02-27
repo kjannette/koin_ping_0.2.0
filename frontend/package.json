@@ -1,7 +1,7 @@
 {
   "name": "frontend",
   "version": "1.0.0",
-  "description": "",
+  "description": "koin_ping blockchain monoitor UI",
   "main": "index.js",
   "scripts": {
     "dev": "vite",
@@ -10,7 +10,8 @@
   },
   "keywords": [
     "cryptocurrency",
-    "event moitoring"
+    "blockchain",
+    "blockchain event moitoring"
   ],
   "author": "Steven Jannette",
   "license": "MIT",

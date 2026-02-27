@@ -9,6 +9,7 @@ import (
 
 type Config struct {
 	Port              int
+	APIBasePath       string
 	DatabaseURL       string
 	DBHost            string
 	DBPort            int
@@ -24,6 +25,7 @@ type Config struct {
 func Load() (*Config, error) {
 	cfg := &Config{
 		Port:           getEnvInt("PORT", 3001),
+		APIBasePath:    getEnv("API_BASE_PATH", "/v1"),
 		DatabaseURL:    os.Getenv("DATABASE_URL"),
 		DBHost:         getEnv("DB_HOST", "localhost"),
 		DBPort:         getEnvInt("DB_PORT", 5432),

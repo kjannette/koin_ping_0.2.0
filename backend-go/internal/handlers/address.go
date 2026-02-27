@@ -30,6 +30,7 @@ func (h *AddressHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Label   *string `json:"label"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		log.Printf("Failed to decode address request body: %v", err)
 		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid request body")
 		return
 	}

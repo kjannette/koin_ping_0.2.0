@@ -28,7 +28,7 @@ export default function AlertForm({ onSubmit }) {
 
     onSubmit({
       type,
-      threshold: needsThreshold ? threshold : undefined,
+      threshold: needsThreshold ? Number(threshold) : undefined,
     });
 
     setThreshold("");

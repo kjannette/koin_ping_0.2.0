@@ -1,6 +1,6 @@
 // API client for system status
 
-const API_BASE = '/api';
+import { API_BASE } from './config';
 
 /**
  * Get system status including latest processed block and health

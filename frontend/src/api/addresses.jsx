@@ -1,8 +1,7 @@
 // API client for address management
 
 import { getAuthHeaders, getAuthHeadersSimple } from './authHeaders';
-
-const API_BASE = '/api';
+import { API_BASE } from './config';
 
 /**
  * Create a new blockchain address to monitor
