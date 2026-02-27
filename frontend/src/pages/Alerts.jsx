@@ -1,10 +1,14 @@
 import { useState, useEffect } from "react";
 import AlertForm from "../components/AlertForm";
 import Button from "../components/Button";
-import Input from "../components/Input";
 import { getAddresses } from "../api/addresses";
 import { getAlerts, createAlert, updateAlertStatus, deleteAlert } from "../api/alerts";
-import { getNotificationConfig, updateNotificationConfig, testDiscordWebhook } from "../api/notificationConfig";
+import {
+  getNotificationConfig,
+  updateNotificationConfig,
+  testDiscordWebhook,
+  testSlackWebhook,
+} from "../api/notificationConfig";
 
 export default function Alerts() {
   const [addresses, setAddresses] = useState([]);
@@ -12,33 +16,34 @@ export default function Alerts() {
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
-  // Notification config state
+
   const [notificationConfig, setNotificationConfig] = useState(null);
   const [discordWebhookUrl, setDiscordWebhookUrl] = useState('');
+  const [slackWebhookUrl, setSlackWebhookUrl] = useState('');
+  const [emailAddress, setEmailAddress] = useState('');
   const [notificationEnabled, setNotificationEnabled] = useState(true);
   const [notificationLoading, setNotificationLoading] = useState(false);
   const [notificationError, setNotificationError] = useState(null);
   const [notificationSuccess, setNotificationSuccess] = useState(null);
-  const [testingWebhook, setTestingWebhook] = useState(false);
+  const [testingDiscord, setTestingDiscord] = useState(false);
+  const [testingSlack, setTestingSlack] = useState(false);
 
-  // Load addresses and notification config on mount
   useEffect(() => {
     async function fetchData() {
       try {
         setLoading(true);
-        
-        // Fetch addresses
+
         const addressData = await getAddresses();
         setAddresses(addressData);
         if (addressData.length > 0) {
           setSelectedAddressId(addressData[0].id);
         }
-        
-        // Fetch notification config
+
         const configData = await getNotificationConfig();
         setNotificationConfig(configData);
         setDiscordWebhookUrl(configData.discord_webhook_url || '');
+        setSlackWebhookUrl(configData.slack_webhook_url || '');
+        setEmailAddress(configData.email || '');
         setNotificationEnabled(configData.notification_enabled !== false);
       } catch (err) {
         setError(err.message);
@@ -51,7 +56,6 @@ export default function Alerts() {
     fetchData();
   }, []);
 
-  // Load alerts when address is selected
   useEffect(() => {
     if (!selectedAddressId) {
       setAlerts([]);
@@ -62,7 +66,7 @@ export default function Alerts() {
       try {
         const data = await getAlerts(selectedAddressId);
         setAlerts(data);
-        setError(null); // Clear any previous errors
+        setError(null);
       } catch (err) {
         setError(err.message);
         console.error("Failed to fetch alerts:", err);
@@ -72,47 +76,43 @@ export default function Alerts() {
     fetchAlerts();
   }, [selectedAddressId]);
 
-  // Handle new alert submission
   async function handleAlertSubmit(data) {
     if (!selectedAddressId) return;
 
     try {
       const newAlert = await createAlert(selectedAddressId, data);
       setAlerts((prev) => [...prev, newAlert]);
-      setError(null); // Clear any previous errors
+      setError(null);
     } catch (err) {
       setError(err.message);
       console.error("Failed to create alert:", err);
     }
   }
 
-  // Toggle alert enabled/disabled
   async function handleToggleAlert(alertId, currentStatus) {
     try {
       const updated = await updateAlertStatus(alertId, !currentStatus);
       setAlerts((prev) =>
         prev.map((alert) => (alert.id === alertId ? updated : alert))
       );
-      setError(null); // Clear any previous errors
+      setError(null);
     } catch (err) {
       setError(err.message);
       console.error("Failed to update alert:", err);
     }
   }
 
-  // Delete alert
   async function handleDeleteAlert(alertId) {
     try {
       await deleteAlert(alertId);
       setAlerts((prev) => prev.filter((alert) => alert.id !== alertId));
-      setError(null); // Clear any previous errors
+      setError(null);
     } catch (err) {
       setError(err.message);
       console.error("Failed to delete alert:", err);
     }
   }
 
-  // Save notification config
   async function handleSaveNotificationConfig() {
     try {
       setNotificationLoading(true);
@@ -121,14 +121,15 @@ export default function Alerts() {
 
       const config = {
         discord_webhook_url: discordWebhookUrl || null,
+        slack_webhook_url: slackWebhookUrl || null,
+        email: emailAddress || null,
         notification_enabled: notificationEnabled,
       };
 
       const updated = await updateNotificationConfig(config);
       setNotificationConfig(updated);
       setNotificationSuccess('Notification settings saved!');
-      
-      // Clear success message after 3 seconds
+
       setTimeout(() => setNotificationSuccess(null), 3000);
     } catch (err) {
       setNotificationError(err.message);
@@ -138,20 +139,19 @@ export default function Alerts() {
     }
   }
 
-  // Test Discord webhook
-  async function handleTestWebhook() {
+  async function handleTestDiscord() {
     if (!discordWebhookUrl) {
       setNotificationError('Please enter a Discord webhook URL first');
       return;
     }
 
     try {
-      setTestingWebhook(true);
+      setTestingDiscord(true);
       setNotificationError(null);
       setNotificationSuccess(null);
 
       const success = await testDiscordWebhook(discordWebhookUrl);
-      
+
       if (success) {
         setNotificationSuccess('Test notification sent! Check your Discord channel.');
         setTimeout(() => setNotificationSuccess(null), 5000);
@@ -161,7 +161,33 @@ export default function Alerts() {
     } catch (err) {
       setNotificationError('Test failed: ' + err.message);
     } finally {
-      setTestingWebhook(false);
+      setTestingDiscord(false);
+    }
+  }
+
+  async function handleTestSlack() {
+    if (!slackWebhookUrl) {
+      setNotificationError('Please enter a Slack webhook URL first');
+      return;
+    }
+
+    try {
+      setTestingSlack(true);
+      setNotificationError(null);
+      setNotificationSuccess(null);
+
+      const success = await testSlackWebhook(slackWebhookUrl);
+
+      if (success) {
+        setNotificationSuccess('Test notification sent! Check your Slack channel.');
+        setTimeout(() => setNotificationSuccess(null), 5000);
+      } else {
+        setNotificationError('Test failed. Check your webhook URL.');
+      }
+    } catch (err) {
+      setNotificationError('Test failed: ' + err.message);
+    } finally {
+      setTestingSlack(false);
     }
   }
 
@@ -183,14 +209,12 @@ export default function Alerts() {
     <div style={{ maxWidth: "1400px", margin: "0 auto", padding: "2rem" }}>
       <h1 style={{ marginBottom: "2rem" }}>Alert Rules & Notifications</h1>
 
-      {/* Two-column layout */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem" }}>
-        
+
         {/* LEFT COLUMN: Alert Rules */}
         <div>
           <h2 style={{ marginTop: 0 }}>Alert Rules</h2>
-          
-          {/* Address selector */}
+
           <div style={{ marginBottom: "2rem" }}>
             <label style={{ display: "block", marginBottom: "0.5rem" }}>
               <strong>Select Address:</strong>
@@ -218,7 +242,6 @@ export default function Alerts() {
 
           {selectedAddress && (
             <>
-              {/* Current address info */}
               <div
                 style={{
                   padding: "1rem",
@@ -239,13 +262,11 @@ export default function Alerts() {
                 </div>
               </div>
 
-              {/* Alert creation form */}
               <div style={{ marginBottom: "2rem" }}>
                 <h3>Create New Alert</h3>
                 <AlertForm onSubmit={handleAlertSubmit} />
               </div>
 
-              {/* Existing alerts list */}
               <div>
                 <h3>Active Alert Rules</h3>
                 {error && <p style={{ color: "red" }}>Error: {error}</p>}
@@ -310,7 +331,7 @@ export default function Alerts() {
         {/* RIGHT COLUMN: Notification Settings */}
         <div>
           <h2 style={{ marginTop: 0 }}>Notification Settings</h2>
-          
+
           {notificationSuccess && (
             <div style={{
               padding: '0.75rem',
@@ -338,7 +359,7 @@ export default function Alerts() {
           )}
 
           {/* Master toggle */}
-          <div style={{ marginBottom: '2rem', padding: '1rem', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+          <div style={{ marginBottom: '2rem', padding: '1rem', backgroundColor: '#1a1a1a', borderRadius: '4px', border: '1px solid #444' }}>
             <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
               <input
                 type="checkbox"
@@ -356,10 +377,10 @@ export default function Alerts() {
           {/* Discord Section */}
           <div style={{ marginBottom: '2rem' }}>
             <h3 style={{ marginBottom: '1rem' }}>Discord</h3>
-            
+
             <div style={{ marginBottom: '1rem' }}>
               <label style={{ display: 'block', marginBottom: '0.5rem' }}>
-                Discord Webhook URL
+                Webhook URL
               </label>
               <input
                 type="text"
@@ -369,7 +390,6 @@ export default function Alerts() {
                 style={{
                   width: '100%',
                   padding: '0.5rem',
-                  fontSize: '1rem',
                   backgroundColor: '#1a1a1a',
                   border: '1px solid #444',
                   borderRadius: '4px',
@@ -379,9 +399,9 @@ export default function Alerts() {
                 }}
               />
               <div style={{ fontSize: '0.85rem', color: '#999', marginTop: '0.5rem' }}>
-                <a 
-                  href="https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks" 
-                  target="_blank" 
+                <a
+                  href="https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks"
+                  target="_blank"
                   rel="noopener noreferrer"
                   style={{ color: '#0066cc' }}
                 >
@@ -390,68 +410,122 @@ export default function Alerts() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button
-                onClick={handleSaveNotificationConfig}
-                disabled={notificationLoading}
-                style={{
-                  padding: '0.75rem 1.5rem',
-                  fontSize: '1rem',
-                  backgroundColor: notificationLoading ? '#333' : '#0066cc',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: notificationLoading ? 'not-allowed' : 'pointer'
-                }}
-              >
-                {notificationLoading ? 'Saving...' : 'Save Settings'}
-              </button>
-
-              <button
-                onClick={handleTestWebhook}
-                disabled={testingWebhook || !discordWebhookUrl}
-                style={{
-                  padding: '0.75rem 1.5rem',
-                  fontSize: '1rem',
-                  backgroundColor: testingWebhook || !discordWebhookUrl ? '#333' : '#28a745',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: testingWebhook || !discordWebhookUrl ? 'not-allowed' : 'pointer'
-                }}
-              >
-                {testingWebhook ? 'Testing...' : 'Test Webhook'}
-              </button>
-            </div>
+            <button
+              onClick={handleTestDiscord}
+              disabled={testingDiscord || !discordWebhookUrl}
+              style={{
+                padding: '0.5rem 1rem',
+                fontSize: '0.9rem',
+                backgroundColor: testingDiscord || !discordWebhookUrl ? '#333' : '#28a745',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: testingDiscord || !discordWebhookUrl ? 'not-allowed' : 'pointer'
+              }}
+            >
+              {testingDiscord ? 'Testing...' : 'Test Webhook'}
+            </button>
           </div>
 
-          {/* Telegram Section (Coming Soon) */}
-          <div style={{ marginBottom: '2rem', opacity: 0.5 }}>
-            <h3 style={{ marginBottom: '1rem' }}>Telegram</h3>
-            <div style={{ 
-              padding: '1rem', 
-              backgroundColor: '#333', 
-              borderRadius: '4px',
-              color: '#999',
-              textAlign: 'center'
-            }}>
-              Coming Soon
+          {/* Slack Section */}
+          <div style={{ marginBottom: '2rem' }}>
+            <h3 style={{ marginBottom: '1rem' }}>Slack</h3>
+
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem' }}>
+                Incoming Webhook URL
+              </label>
+              <input
+                type="text"
+                value={slackWebhookUrl}
+                onChange={(e) => setSlackWebhookUrl(e.target.value)}
+                placeholder="https://hooks.slack.com/services/..."
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  backgroundColor: '#1a1a1a',
+                  border: '1px solid #444',
+                  borderRadius: '4px',
+                  color: 'white',
+                  fontFamily: 'monospace',
+                  fontSize: '0.9rem'
+                }}
+              />
+              <div style={{ fontSize: '0.85rem', color: '#999', marginTop: '0.5rem' }}>
+                <a
+                  href="https://api.slack.com/messaging/webhooks"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: '#0066cc' }}
+                >
+                  How to set up Slack Incoming Webhooks
+                </a>
+              </div>
             </div>
+
+            <button
+              onClick={handleTestSlack}
+              disabled={testingSlack || !slackWebhookUrl}
+              style={{
+                padding: '0.5rem 1rem',
+                fontSize: '0.9rem',
+                backgroundColor: testingSlack || !slackWebhookUrl ? '#333' : '#28a745',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: testingSlack || !slackWebhookUrl ? 'not-allowed' : 'pointer'
+              }}
+            >
+              {testingSlack ? 'Testing...' : 'Test Webhook'}
+            </button>
           </div>
 
-          {/* Email Section (Coming Soon) */}
-          <div style={{ opacity: 0.5 }}>
+          {/* Email Section */}
+          <div style={{ marginBottom: '2rem' }}>
             <h3 style={{ marginBottom: '1rem' }}>Email</h3>
-            <div style={{ 
-              padding: '1rem', 
-              backgroundColor: '#333', 
-              borderRadius: '4px',
-              color: '#999',
-              textAlign: 'center'
-            }}>
-              Coming Soon
+
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem' }}>
+                Email Address
+              </label>
+              <input
+                type="email"
+                value={emailAddress}
+                onChange={(e) => setEmailAddress(e.target.value)}
+                placeholder="you@example.com"
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  backgroundColor: '#1a1a1a',
+                  border: '1px solid #444',
+                  borderRadius: '4px',
+                  color: 'white',
+                  fontSize: '0.9rem'
+                }}
+              />
+              <div style={{ fontSize: '0.85rem', color: '#999', marginTop: '0.5rem' }}>
+                Requires SMTP to be configured on the server
+              </div>
             </div>
           </div>
+
+          {/* Save Button */}
+          <button
+            onClick={handleSaveNotificationConfig}
+            disabled={notificationLoading}
+            style={{
+              padding: '0.75rem 1.5rem',
+              fontSize: '1rem',
+              backgroundColor: notificationLoading ? '#333' : '#0066cc',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: notificationLoading ? 'not-allowed' : 'pointer',
+              width: '100%',
+            }}
+          >
+            {notificationLoading ? 'Saving...' : 'Save All Notification Settings'}
+          </button>
         </div>
 
       </div>
@@ -459,7 +533,6 @@ export default function Alerts() {
   );
 }
 
-// Helper to format alert type for display
 function formatAlertType(type) {
   const labels = {
     incoming_tx: "Incoming transaction",

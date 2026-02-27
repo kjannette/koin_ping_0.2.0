@@ -14,6 +14,7 @@ import (
 	"github.com/kjannette/koin-ping/backend-go/internal/config"
 	"github.com/kjannette/koin-ping/backend-go/internal/database"
 	"github.com/kjannette/koin-ping/backend-go/internal/models"
+	"github.com/kjannette/koin-ping/backend-go/internal/notifications"
 	"github.com/kjannette/koin-ping/backend-go/internal/protocols/ethereum"
 	"github.com/kjannette/koin-ping/backend-go/internal/services"
 )
@@ -47,8 +48,16 @@ func main() {
 	checkpointModel := models.NewCheckpointModel(pool)
 	notifConfigModel := models.NewNotificationConfigModel(pool)
 
+	smtpCfg := notifications.SMTPConfig{
+		Host:     cfg.SMTPHost,
+		Port:     cfg.SMTPPort,
+		Username: cfg.SMTPUser,
+		Password: cfg.SMTPPassword,
+		From:     cfg.SMTPFrom,
+	}
+
 	observer := services.NewObserverService(eth, addressModel, checkpointModel)
-	evaluator := services.NewEvaluatorService(eth, alertRuleModel, alertEventModel, addressModel, notifConfigModel)
+	evaluator := services.NewEvaluatorService(eth, alertRuleModel, alertEventModel, addressModel, notifConfigModel, smtpCfg)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

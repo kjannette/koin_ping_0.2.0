@@ -18,6 +18,7 @@ type EvaluatorService struct {
 	alertEvents  *models.AlertEventModel
 	addresses    *models.AddressModel
 	notifConfigs *models.NotificationConfigModel
+	smtpConfig   notifications.SMTPConfig
 }
 
 func NewEvaluatorService(
@@ -26,6 +27,7 @@ func NewEvaluatorService(
 	alertEvents *models.AlertEventModel,
 	addresses *models.AddressModel,
 	notifConfigs *models.NotificationConfigModel,
+	smtpCfg notifications.SMTPConfig,
 ) *EvaluatorService {
 	return &EvaluatorService{
 		eth:          eth,
@@ -33,6 +35,7 @@ func NewEvaluatorService(
 		alertEvents:  alertEvents,
 		addresses:    addresses,
 		notifConfigs: notifConfigs,
+		smtpConfig:   smtpCfg,
 	}
 }
 
@@ -168,40 +171,56 @@ func (s *EvaluatorService) fireAlert(ctx context.Context, rule domain.AlertRule,
 
 	log.Printf("[ALERT FIRED] Rule %d (%s) - %s - TX: %s", rule.ID, rule.Type, message, obs.Hash)
 
-	// Send Discord notification (non-fatal on failure)
 	if addr != nil {
-		go s.sendNotification(ctx, addr.UserID, message, obs, addressLabel, rule, addr.Address)
+		go s.sendNotifications(ctx, addr.UserID, message, obs, addressLabel, rule, addr.Address)
 	}
 
 	return nil
 }
 
-func (s *EvaluatorService) sendNotification(ctx context.Context, userID, message string, obs domain.ObservedTx, addressLabel string, rule domain.AlertRule, address string) {
+func (s *EvaluatorService) sendNotifications(ctx context.Context, userID, message string, obs domain.ObservedTx, addressLabel string, rule domain.AlertRule, address string) {
 	notifConfig, err := s.notifConfigs.GetConfig(ctx, userID)
 	if err != nil {
 		log.Printf("Failed to get notification config: %v", err)
 		return
 	}
 
-	if notifConfig == nil || !notifConfig.NotificationEnabled || notifConfig.DiscordWebhookURL == nil {
+	if notifConfig == nil || !notifConfig.NotificationEnabled {
 		return
 	}
 
-	sent, err := notifications.SendDiscordNotification(
-		*notifConfig.DiscordWebhookURL,
-		message,
-		notifications.AlertMetadata{
-			TxHash:       obs.Hash,
-			AddressLabel: addressLabel,
-			AlertType:    string(rule.Type),
-			Address:      address,
-		},
-	)
+	meta := notifications.AlertMetadata{
+		TxHash:       obs.Hash,
+		AddressLabel: addressLabel,
+		AlertType:    string(rule.Type),
+		Address:      address,
+	}
 
-	if err != nil || !sent {
-		log.Printf("Discord notification failed for user %s: %v", userID, err)
-	} else {
-		log.Printf("Discord notification sent to user %s", userID)
+	if notifConfig.DiscordWebhookURL != nil && *notifConfig.DiscordWebhookURL != "" {
+		sent, err := notifications.SendDiscordNotification(*notifConfig.DiscordWebhookURL, message, meta)
+		if err != nil || !sent {
+			log.Printf("Discord notification failed for user %s: %v", userID, err)
+		} else {
+			log.Printf("Discord notification sent to user %s", userID)
+		}
+	}
+
+	if notifConfig.SlackWebhookURL != nil && *notifConfig.SlackWebhookURL != "" {
+		sent, err := notifications.SendSlackNotification(*notifConfig.SlackWebhookURL, message, meta)
+		if err != nil || !sent {
+			log.Printf("Slack notification failed for user %s: %v", userID, err)
+		} else {
+			log.Printf("Slack notification sent to user %s", userID)
+		}
+	}
+
+	if notifConfig.Email != nil && *notifConfig.Email != "" && s.smtpConfig.IsConfigured() {
+		sent, err := notifications.SendEmailNotification(s.smtpConfig, *notifConfig.Email, message, meta)
+		if err != nil || !sent {
+			log.Printf("Email notification failed for user %s: %v", userID, err)
+		} else {
+			log.Printf("Email notification sent to user %s (%s)", userID, *notifConfig.Email)
+		}
 	}
 }
 

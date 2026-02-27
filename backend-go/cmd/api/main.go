@@ -13,10 +13,11 @@ import (
 	"github.com/kjannette/koin-ping/backend-go/internal/handlers"
 	"github.com/kjannette/koin-ping/backend-go/internal/middleware"
 	"github.com/kjannette/koin-ping/backend-go/internal/models"
+	"github.com/kjannette/koin-ping/backend-go/internal/protocols/ethereum"
 )
 
 func main() {
-	_ = godotenv.Load() // .env is optional; env vars can also be set externally
+	_ = godotenv.Load()
 
 	cfg, err := config.Load()
 	if err != nil {
@@ -33,41 +34,47 @@ func main() {
 		log.Fatalf("Failed to initialize Firebase: %v", err)
 	}
 
+	var eth ethereum.EthereumObserver
+	if cfg.EthRPCURL != "" {
+		eth, err = ethereum.NewJsonRpcEthereum(cfg.EthRPCURL)
+		if err != nil {
+			log.Printf("Warning: Failed to create Ethereum observer: %v", err)
+		}
+	}
+
 	addressModel := models.NewAddressModel(pool)
 	alertRuleModel := models.NewAlertRuleModel(pool)
 	alertEventModel := models.NewAlertEventModel(pool)
 	notifConfigModel := models.NewNotificationConfigModel(pool)
+	checkpointModel := models.NewCheckpointModel(pool)
 
 	addressHandler := handlers.NewAddressHandler(addressModel)
 	alertRuleHandler := handlers.NewAlertRuleHandler(alertRuleModel, addressModel)
 	alertEventHandler := handlers.NewAlertEventHandler(alertEventModel)
 	notifConfigHandler := handlers.NewNotificationConfigHandler(notifConfigModel)
+	statusHandler := handlers.NewStatusHandler(eth, checkpointModel)
 
 	mux := http.NewServeMux()
-	b := cfg.APIBasePath // e.g. "/v1"
+	b := cfg.APIBasePath
 
-	// Public routes
 	mux.HandleFunc("GET "+b+"/health", handlers.HealthCheck)
-	mux.HandleFunc("GET "+b+"/status", handlers.SystemStatus)
+	mux.HandleFunc("GET "+b+"/status", statusHandler.SystemStatus)
 
-	// Authenticated routes — addresses
 	mux.Handle("POST "+b+"/addresses", middleware.Authenticate(http.HandlerFunc(addressHandler.Create)))
 	mux.Handle("GET "+b+"/addresses", middleware.Authenticate(http.HandlerFunc(addressHandler.List)))
 	mux.Handle("DELETE "+b+"/addresses/{addressId}", middleware.Authenticate(http.HandlerFunc(addressHandler.Remove)))
 
-	// Authenticated routes — alert rules
 	mux.Handle("POST "+b+"/addresses/{addressId}/alerts", middleware.Authenticate(http.HandlerFunc(alertRuleHandler.Create)))
 	mux.Handle("GET "+b+"/addresses/{addressId}/alerts", middleware.Authenticate(http.HandlerFunc(alertRuleHandler.ListByAddress)))
 	mux.Handle("PATCH "+b+"/alerts/{alertId}", middleware.Authenticate(http.HandlerFunc(alertRuleHandler.UpdateStatus)))
 	mux.Handle("DELETE "+b+"/alerts/{alertId}", middleware.Authenticate(http.HandlerFunc(alertRuleHandler.Remove)))
 
-	// Authenticated routes — alert events
 	mux.Handle("GET "+b+"/alert-events", middleware.Authenticate(http.HandlerFunc(alertEventHandler.List)))
 
-	// Authenticated routes — notification config
 	mux.Handle("GET "+b+"/notification-config", middleware.Authenticate(http.HandlerFunc(notifConfigHandler.GetConfig)))
 	mux.Handle("PUT "+b+"/notification-config", middleware.Authenticate(http.HandlerFunc(notifConfigHandler.UpdateConfig)))
 	mux.Handle("DELETE "+b+"/notification-config", middleware.Authenticate(http.HandlerFunc(notifConfigHandler.DeleteConfig)))
+	mux.Handle("POST "+b+"/notification-config/test", middleware.Authenticate(http.HandlerFunc(notifConfigHandler.TestWebhook)))
 
 	handler := corsMiddleware(mux)
 

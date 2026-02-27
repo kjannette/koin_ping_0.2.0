@@ -1,5 +1,3 @@
-// API client for notification configuration
-
 import { getAuthHeaders } from './authHeaders';
 import { API_BASE } from './config';
 
@@ -38,7 +36,7 @@ export async function getNotificationConfig() {
  * Update notification configuration
  * @param {Object} config - Configuration to update
  * @param {string} [config.discord_webhook_url] - Discord webhook URL
- * @param {string} [config.telegram_chat_id] - Telegram chat ID
+ * @param {string} [config.slack_webhook_url] - Slack webhook URL
  * @param {string} [config.email] - Email address
  * @param {boolean} [config.notification_enabled] - Enable/disable notifications
  * @returns {Promise<Object>} Updated config
@@ -73,27 +71,46 @@ export async function updateNotificationConfig(config) {
 }
 
 /**
- * Test a Discord webhook URL
- * Sends a test message to verify the webhook works
- * @param {string} webhookUrl - Discord webhook URL to test
+ * Test a webhook URL by sending a test message via the backend
+ * @param {string} type - 'discord' or 'slack'
+ * @param {string} webhookUrl - Webhook URL to test
  * @returns {Promise<boolean>} True if test successful
  */
-export async function testDiscordWebhook(webhookUrl) {
+async function testWebhook(type, webhookUrl) {
   try {
-    const payload = {
-      content: 'Koin Ping test notification - Your Discord webhook is configured correctly!',
-    };
-
-    const response = await fetch(webhookUrl, {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${API_BASE}/notification-config/test`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      headers: headers,
+      body: JSON.stringify({ type, url: webhookUrl })
     });
 
-    return response.ok;
+    if (!response.ok) {
+      return false;
+    }
+
+    const result = await response.json();
+    return result.success === true;
   } catch (error) {
-    console.error('Discord webhook test failed:', error);
+    console.error(`${type} webhook test failed:`, error);
     return false;
   }
 }
 
+/**
+ * Test a Discord webhook URL
+ * @param {string} webhookUrl - Discord webhook URL to test
+ * @returns {Promise<boolean>} True if test successful
+ */
+export async function testDiscordWebhook(webhookUrl) {
+  return testWebhook('discord', webhookUrl);
+}
+
+/**
+ * Test a Slack webhook URL
+ * @param {string} webhookUrl - Slack webhook URL to test
+ * @returns {Promise<boolean>} True if test successful
+ */
+export async function testSlackWebhook(webhookUrl) {
+  return testWebhook('slack', webhookUrl);
+}

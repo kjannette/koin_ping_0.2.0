@@ -82,12 +82,11 @@ type CheckpointDetail struct {
 }
 
 type NotificationConfig struct {
-	UserID              string  `json:"user_id"`
-	DiscordWebhookURL   *string `json:"discord_webhook_url"`
-	TelegramChatID      *string `json:"telegram_chat_id"`
-	TelegramBotToken    *string `json:"telegram_bot_token,omitempty"`
-	Email               *string `json:"email"`
-	NotificationEnabled bool    `json:"notification_enabled"`
+	UserID              string     `json:"user_id"`
+	DiscordWebhookURL   *string    `json:"discord_webhook_url"`
+	SlackWebhookURL     *string    `json:"slack_webhook_url"`
+	Email               *string    `json:"email"`
+	NotificationEnabled bool       `json:"notification_enabled"`
 	CreatedAt           *time.Time `json:"created_at,omitempty"`
 	UpdatedAt           *time.Time `json:"updated_at,omitempty"`
 }

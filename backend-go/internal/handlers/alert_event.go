@@ -4,9 +4,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"time"
 
-	"github.com/kjannette/koin-ping/backend-go/internal/domain"
 	"github.com/kjannette/koin-ping/backend-go/internal/middleware"
 	"github.com/kjannette/koin-ping/backend-go/internal/models"
 )
@@ -46,44 +44,5 @@ func (h *AlertEventHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Found %d alert events for user", len(events))
 
-	// MVP scaffolding: return mock data if DB is empty
-	if len(events) == 0 {
-		events = mockEvents(limit)
-	}
-
 	writeJSON(w, http.StatusOK, events)
-}
-
-func mockEvents(limit int) []domain.AlertEvent {
-	label1 := "Treasury Wallet"
-	label2 := "Cold Storage"
-
-	mocks := []domain.AlertEvent{
-		{
-			ID:           1,
-			AlertRuleID:  1,
-			Message:      "Incoming transaction detected: 5.5 ETH received",
-			AddressLabel: &label1,
-			Timestamp:    time.Now().Add(-2 * time.Hour),
-		},
-		{
-			ID:           2,
-			AlertRuleID:  2,
-			Message:      "Balance dropped below threshold: Current balance 8.2 ETH",
-			AddressLabel: &label1,
-			Timestamp:    time.Now().Add(-5 * time.Hour),
-		},
-		{
-			ID:           3,
-			AlertRuleID:  3,
-			Message:      "Outgoing transaction detected: 2.0 ETH sent",
-			AddressLabel: &label2,
-			Timestamp:    time.Now().Add(-24 * time.Hour),
-		},
-	}
-
-	if limit < len(mocks) {
-		return mocks[:limit]
-	}
-	return mocks
 }

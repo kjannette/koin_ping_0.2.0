@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import AddressForm from "../components/AddressForm";
-import { getAddresses, createAddress } from "../api/addresses";
+import Button from "../components/Button";
+import { getAddresses, createAddress, deleteAddress } from "../api/addresses";
 
 export default function Addresses() {
   const [addresses, setAddresses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
 
-  // Load addresses on mount
   useEffect(() => {
     async function fetchAddresses() {
       try {
@@ -25,16 +26,32 @@ export default function Addresses() {
     fetchAddresses();
   }, []);
 
-  // Handle new address submission
   async function handleAddressSubmit(data) {
     try {
       const newAddress = await createAddress(data);
-      // Append new address to state
       setAddresses((prev) => [...prev, newAddress]);
-      setError(null); // Clear any previous errors
+      setError(null);
     } catch (err) {
       setError(err.message);
       console.error("Failed to create address:", err);
+    }
+  }
+
+  async function handleDelete(addressId) {
+    if (!window.confirm("Delete this address? All associated alert rules and events will also be removed.")) {
+      return;
+    }
+
+    try {
+      setDeletingId(addressId);
+      await deleteAddress(addressId);
+      setAddresses((prev) => prev.filter((a) => a.id !== addressId));
+      setError(null);
+    } catch (err) {
+      setError(err.message);
+      console.error("Failed to delete address:", err);
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -63,16 +80,34 @@ export default function Addresses() {
                 style={{
                   padding: "1rem",
                   marginBottom: "0.5rem",
-                  border: "1px solid #ddd",
+                  border: "1px solid #444",
                   borderRadius: "4px",
+                  backgroundColor: "#2a2a2a",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
                 }}
               >
-                <div style={{ fontWeight: "bold", marginBottom: "0.25rem" }}>
-                  {addr.label || "Unlabeled"}
+                <div>
+                  <div style={{ fontWeight: "bold", marginBottom: "0.25rem" }}>
+                    {addr.label || "Unlabeled"}
+                  </div>
+                  <div style={{ fontFamily: "monospace", fontSize: "0.9rem", color: "#999" }}>
+                    {addr.address}
+                  </div>
                 </div>
-                <div style={{ fontFamily: "monospace", fontSize: "0.9rem" }}>
-                  {addr.address}
-                </div>
+                <Button
+                  onClick={() => handleDelete(addr.id)}
+                  disabled={deletingId === addr.id}
+                  style={{
+                    backgroundColor: deletingId === addr.id ? "#333" : "#dc3545",
+                    color: "white",
+                    border: "none",
+                    cursor: deletingId === addr.id ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {deletingId === addr.id ? "Deleting..." : "Delete"}
+                </Button>
               </li>
             ))}
           </ul>

@@ -20,6 +20,12 @@ type Config struct {
 	EthRPCURL         string
 	PollIntervalMS    int
 	NodeEnv           string
+
+	SMTPHost     string
+	SMTPPort     int
+	SMTPUser     string
+	SMTPPassword string
+	SMTPFrom     string
 }
 
 func Load() (*Config, error) {
@@ -36,6 +42,12 @@ func Load() (*Config, error) {
 		EthRPCURL:      os.Getenv("ETH_RPC_URL"),
 		PollIntervalMS: getEnvInt("POLL_INTERVAL_MS", 60000),
 		NodeEnv:        getEnv("NODE_ENV", "development"),
+
+		SMTPHost:     os.Getenv("SMTP_HOST"),
+		SMTPPort:     getEnvInt("SMTP_PORT", 587),
+		SMTPUser:     os.Getenv("SMTP_USER"),
+		SMTPPassword: os.Getenv("SMTP_PASSWORD"),
+		SMTPFrom:     os.Getenv("SMTP_FROM"),
 	}
 
 	if cfg.PollIntervalMS < 1000 {

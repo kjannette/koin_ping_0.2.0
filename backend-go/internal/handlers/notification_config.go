@@ -10,6 +10,7 @@ import (
 	"github.com/kjannette/koin-ping/backend-go/internal/domain"
 	"github.com/kjannette/koin-ping/backend-go/internal/middleware"
 	"github.com/kjannette/koin-ping/backend-go/internal/models"
+	"github.com/kjannette/koin-ping/backend-go/internal/notifications"
 )
 
 var emailRe = regexp.MustCompile(`^[^\s@]+@[^\s@]+\.[^\s@]+$`)
@@ -50,7 +51,7 @@ func (h *NotificationConfigHandler) UpdateConfig(w http.ResponseWriter, r *http.
 
 	var body struct {
 		DiscordWebhookURL   *string `json:"discord_webhook_url"`
-		TelegramChatID      *string `json:"telegram_chat_id"`
+		SlackWebhookURL     *string `json:"slack_webhook_url"`
 		Email               *string `json:"email"`
 		NotificationEnabled *bool   `json:"notification_enabled"`
 	}
@@ -62,7 +63,7 @@ func (h *NotificationConfigHandler) UpdateConfig(w http.ResponseWriter, r *http.
 
 	log.Printf("User %s updating notification config", userID)
 
-	if body.DiscordWebhookURL == nil && body.TelegramChatID == nil &&
+	if body.DiscordWebhookURL == nil && body.SlackWebhookURL == nil &&
 		body.Email == nil && body.NotificationEnabled == nil {
 		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR",
 			"At least one configuration field must be provided")
@@ -73,6 +74,13 @@ func (h *NotificationConfigHandler) UpdateConfig(w http.ResponseWriter, r *http.
 		!strings.HasPrefix(*body.DiscordWebhookURL, "https://discord.com/api/webhooks/") {
 		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR",
 			"Invalid Discord webhook URL format")
+		return
+	}
+
+	if body.SlackWebhookURL != nil && *body.SlackWebhookURL != "" &&
+		!strings.HasPrefix(*body.SlackWebhookURL, "https://hooks.slack.com/") {
+		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR",
+			"Invalid Slack webhook URL format")
 		return
 	}
 
@@ -89,7 +97,7 @@ func (h *NotificationConfigHandler) UpdateConfig(w http.ResponseWriter, r *http.
 
 	cfg := domain.NotificationConfig{
 		DiscordWebhookURL:   body.DiscordWebhookURL,
-		TelegramChatID:      body.TelegramChatID,
+		SlackWebhookURL:     body.SlackWebhookURL,
 		Email:               body.Email,
 		NotificationEnabled: enabled,
 	}
@@ -125,4 +133,51 @@ func (h *NotificationConfigHandler) DeleteConfig(w http.ResponseWriter, r *http.
 
 	log.Println("Notification config deleted")
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *NotificationConfigHandler) TestWebhook(w http.ResponseWriter, r *http.Request) {
+	_ = middleware.GetUserID(r.Context())
+
+	var body struct {
+		Type string `json:"type"`
+		URL  string `json:"url"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid request body")
+		return
+	}
+
+	if body.URL == "" {
+		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "URL is required")
+		return
+	}
+
+	var ok bool
+	var err error
+
+	switch body.Type {
+	case "slack":
+		if !strings.HasPrefix(body.URL, "https://hooks.slack.com/") {
+			writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid Slack webhook URL")
+			return
+		}
+		ok, err = notifications.TestSlackWebhook(body.URL)
+	case "discord":
+		if !strings.HasPrefix(body.URL, "https://discord.com/api/webhooks/") {
+			writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid Discord webhook URL")
+			return
+		}
+		ok, err = notifications.TestDiscordWebhook(body.URL)
+	default:
+		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Type must be 'slack' or 'discord'")
+		return
+	}
+
+	if err != nil {
+		log.Printf("Webhook test failed: %v", err)
+		writeJSON(w, http.StatusOK, map[string]interface{}{"success": false, "error": err.Error()})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{"success": ok})
 }
