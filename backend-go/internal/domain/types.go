@@ -15,6 +15,9 @@ type Address struct {
 // AlertType identifies the kind of alert rule.
 type AlertType string
 
+// String implements fmt.Stringer.
+func (a AlertType) String() string { return string(a) }
+
 // Alert type constants define the supported alert triggers.
 const (
 	AlertIncomingTx    AlertType = "incoming_tx"
@@ -24,7 +27,7 @@ const (
 )
 
 // ValidAlertTypes lists all alert types accepted by the API.
-var ValidAlertTypes = []AlertType{
+var ValidAlertTypes = []AlertType{ //nolint:gochecknoglobals
 	AlertIncomingTx,
 	AlertOutgoingTx,
 	AlertLargeTransfer,
@@ -32,7 +35,7 @@ var ValidAlertTypes = []AlertType{
 }
 
 // ThresholdRequiredTypes lists alert types that require a threshold value.
-var ThresholdRequiredTypes = []AlertType{
+var ThresholdRequiredTypes = []AlertType{ //nolint:gochecknoglobals
 	AlertLargeTransfer,
 	AlertBalanceBelow,
 }
@@ -119,6 +122,9 @@ type NormalizedTx struct {
 
 // Direction indicates whether a transaction is incoming or outgoing.
 type Direction string
+
+// String implements fmt.Stringer.
+func (d Direction) String() string { return string(d) }
 
 // Direction constants indicate the flow of a transaction relative to a watched address.
 const (

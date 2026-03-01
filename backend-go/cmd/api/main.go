@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/kjannette/koin-ping/backend-go/internal/config"
@@ -13,6 +14,13 @@ import (
 	"github.com/kjannette/koin-ping/backend-go/internal/handlers"
 	"github.com/kjannette/koin-ping/backend-go/internal/middleware"
 	"github.com/kjannette/koin-ping/backend-go/internal/models"
+)
+
+const (
+	// serverReadTimeoutSeconds is the maximum duration to read a request.
+	serverReadTimeoutSeconds = 5
+	// serverWriteTimeoutSeconds is the maximum duration to write a response.
+	serverWriteTimeoutSeconds = 10
 )
 
 //nolint:funlen
@@ -90,8 +98,10 @@ func main() {
 	log.Printf("Environment: %s", cfg.NodeEnv)
 
 	server := &http.Server{
-		Addr:    addr,
-		Handler: handler,
+		Addr:         addr,
+		Handler:      handler,
+		ReadTimeout:  serverReadTimeoutSeconds * time.Second,
+		WriteTimeout: serverWriteTimeoutSeconds * time.Second,
 	}
 	if err := server.ListenAndServe(); err != nil {
 		log.Fatalf("Server failed: %v", err)

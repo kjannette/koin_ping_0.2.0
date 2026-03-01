@@ -2,7 +2,9 @@ package models
 
 import (
 	"context"
+	"errors"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/kjannette/koin-ping/backend-go/internal/domain"
 )
@@ -23,7 +25,7 @@ func (m *CheckpointModel) GetLastCheckedBlock(ctx context.Context, addressID int
 		addressID,
 	).Scan(&block)
 	if err != nil {
-		if err.Error() == "no rows in result set" {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return 0, false, nil
 		}
 		return 0, false, err

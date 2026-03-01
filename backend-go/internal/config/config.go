@@ -1,4 +1,4 @@
-// Package config loads environment-based configuration.
+//loads environment-based configuration.
 package config
 
 import (
@@ -9,17 +9,12 @@ import (
 )
 
 const (
-	// defaultPort is the default HTTP server port.
 	defaultPort = 3001
-	// defaultDBPort is the default PostgreSQL port.
 	defaultDBPort = 5432
-	// defaultPollIntervalMS is the default poller interval in milliseconds.
 	defaultPollIntervalMS = 60000
-	// minPollIntervalMS is the minimum allowed poller interval.
 	minPollIntervalMS = 1000
 )
 
-// Config holds application configuration.
 type Config struct {
 	Port              int
 	APIBasePath       string
@@ -59,10 +54,8 @@ func Load() (*Config, error) {
 	return cfg, nil
 }
 
-// DSN returns the PostgreSQL data source name for the configured database.
 func (c *Config) DSN() string {
 	if c.DatabaseURL != "" {
-		// pgx defaults to sslmode=prefer, which fails against local Postgres.
 		// Append sslmode=disable if not already specified.
 		if !strings.Contains(c.DatabaseURL, "sslmode=") {
 			sep := "?"

@@ -9,6 +9,22 @@ import (
 	"time"
 )
 
+const (
+	// discordHTTPTimeoutSeconds is the timeout for Discord webhook requests.
+	discordHTTPTimeoutSeconds = 10
+
+	// Alert color codes for Discord embeds.
+	colorGreen  = 0x00ff00
+	colorOrange = 0xff9900
+	colorRed    = 0xff0000
+	colorBlue   = 0x0099ff
+)
+
+// discordHTTPClient is a shared HTTP client with a timeout for Discord requests.
+var discordHTTPClient = &http.Client{ //nolint:gochecknoglobals
+	Timeout: discordHTTPTimeoutSeconds * time.Second,
+}
+
 type AlertMetadata struct {
 	TxHash       string
 	AddressLabel string
@@ -73,7 +89,9 @@ func SendDiscordNotification(webhookURL, message string, meta AlertMetadata) (bo
 		return false, fmt.Errorf("marshal discord payload: %w", err)
 	}
 
-	resp, err := http.Post(webhookURL, "application/json", bytes.NewReader(body))
+	resp, err := discordHTTPClient.Post(
+		webhookURL, "application/json", bytes.NewReader(body),
+	)
 	if err != nil {
 		log.Printf("Failed to send Discord notification: %v", err)
 		return false, err
@@ -98,7 +116,9 @@ func TestDiscordWebhook(webhookURL string) (bool, error) {
 		return false, err
 	}
 
-	resp, err := http.Post(webhookURL, "application/json", bytes.NewReader(body))
+	resp, err := discordHTTPClient.Post(
+		webhookURL, "application/json", bytes.NewReader(body),
+	)
 	if err != nil {
 		log.Printf("Discord webhook test failed: %v", err)
 		return false, err
@@ -111,14 +131,14 @@ func TestDiscordWebhook(webhookURL string) (bool, error) {
 func colorForAlertType(alertType string) int {
 	switch alertType {
 	case "incoming_tx":
-		return 0x00ff00 // Green
+		return colorGreen
 	case "outgoing_tx":
-		return 0xff9900 // Orange
+		return colorOrange
 	case "large_transfer":
-		return 0xff0000 // Red
+		return colorRed
 	case "balance_below":
-		return 0xff0000 // Red
+		return colorRed
 	default:
-		return 0x0099ff // Blue
+		return colorBlue
 	}
 }

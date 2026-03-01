@@ -68,7 +68,7 @@ func (h *AlertRuleHandler) Create(w http.ResponseWriter, r *http.Request) {
 	if !domain.IsValidAlertType(body.Type) {
 		types := make([]string, len(domain.ValidAlertTypes))
 		for i, t := range domain.ValidAlertTypes {
-			types[i] = string(t)
+			types[i] = t.String()
 		}
 		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR",
 			"Invalid alert type. Must be one of: "+strings.Join(types, ", "))
