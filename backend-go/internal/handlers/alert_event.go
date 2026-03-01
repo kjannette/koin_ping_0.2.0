@@ -11,14 +11,17 @@ import (
 	"github.com/kjannette/koin-ping/backend-go/internal/models"
 )
 
+// AlertEventHandler handles HTTP requests for alert event history.
 type AlertEventHandler struct {
 	alertEvents *models.AlertEventModel
 }
 
+// NewAlertEventHandler creates a new AlertEventHandler.
 func NewAlertEventHandler(alertEvents *models.AlertEventModel) *AlertEventHandler {
 	return &AlertEventHandler{alertEvents: alertEvents}
 }
 
+// List handles GET requests to list recent alert events for the current user.
 func (h *AlertEventHandler) List(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r.Context())
 
@@ -34,6 +37,7 @@ func (h *AlertEventHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	if limit < 1 || limit > 100 {
 		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Limit must be between 1 and 100")
+
 		return
 	}
 
@@ -41,6 +45,7 @@ func (h *AlertEventHandler) List(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Error listing alert events: %v", err)
 		writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to list alert events")
+
 		return
 	}
 
@@ -67,15 +72,15 @@ func mockEvents(limit int) []domain.AlertEvent {
 			Timestamp:    time.Now().Add(-2 * time.Hour),
 		},
 		{
-			ID:           2,
-			AlertRuleID:  2,
+			ID:           2,           //nolint:mnd
+			AlertRuleID:  2,           //nolint:mnd
 			Message:      "Balance dropped below threshold: Current balance 8.2 ETH",
 			AddressLabel: &label1,
 			Timestamp:    time.Now().Add(-5 * time.Hour),
 		},
 		{
-			ID:           3,
-			AlertRuleID:  3,
+			ID:           3,           //nolint:mnd
+			AlertRuleID:  3,           //nolint:mnd
 			Message:      "Outgoing transaction detected: 2.0 ETH sent",
 			AddressLabel: &label2,
 			Timestamp:    time.Now().Add(-24 * time.Hour),
@@ -85,5 +90,6 @@ func mockEvents(limit int) []domain.AlertEvent {
 	if limit < len(mocks) {
 		return mocks[:limit]
 	}
+
 	return mocks
 }

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -13,20 +14,27 @@ import (
 	"github.com/kjannette/koin-ping/backend-go/internal/models"
 )
 
+// errThresholdFormat is returned when the threshold JSON cannot be decoded.
+var errThresholdFormat = errors.New("unsupported threshold format")
+
+// AlertRuleHandler handles HTTP requests for alert rule management.
 type AlertRuleHandler struct {
 	alertRules *models.AlertRuleModel
 	addresses  *models.AddressModel
 }
 
+// NewAlertRuleHandler creates a new AlertRuleHandler.
 func NewAlertRuleHandler(alertRules *models.AlertRuleModel, addresses *models.AddressModel) *AlertRuleHandler {
 	return &AlertRuleHandler{alertRules: alertRules, addresses: addresses}
 }
 
+// Create handles POST requests to create a new alert rule for an address.
 func (h *AlertRuleHandler) Create(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r.Context())
 	addressID, ok := parseIntParam(r.PathValue("addressId"))
 	if !ok {
 		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid address ID")
+
 		return
 	}
 
@@ -37,6 +45,7 @@ func (h *AlertRuleHandler) Create(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		log.Printf("Failed to decode alert request body: %v", err)
 		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid request body")
+
 		return
 	}
 
@@ -44,6 +53,7 @@ func (h *AlertRuleHandler) Create(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Failed to parse threshold: %v", err)
 		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "threshold must be a valid number")
+
 		return
 	}
 
@@ -51,6 +61,7 @@ func (h *AlertRuleHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	if body.Type == "" {
 		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Alert type is required")
+
 		return
 	}
 
@@ -60,7 +71,8 @@ func (h *AlertRuleHandler) Create(w http.ResponseWriter, r *http.Request) {
 			types[i] = string(t)
 		}
 		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR",
-			fmt.Sprintf("Invalid alert type. Must be one of: %s", strings.Join(types, ", ")))
+			"Invalid alert type. Must be one of: "+strings.Join(types, ", "))
+
 		return
 	}
 
@@ -69,6 +81,7 @@ func (h *AlertRuleHandler) Create(w http.ResponseWriter, r *http.Request) {
 		if threshold == nil || *threshold <= 0 {
 			writeError(w, http.StatusBadRequest, "VALIDATION_ERROR",
 				fmt.Sprintf("Alert type '%s' requires a positive threshold value", body.Type))
+
 			return
 		}
 	}
@@ -77,11 +90,13 @@ func (h *AlertRuleHandler) Create(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Error finding address: %v", err)
 		writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to create alert rule")
+
 		return
 	}
 	if addr == nil {
 		log.Printf("Address %d not found or not owned by user", addressID)
 		writeError(w, http.StatusNotFound, "NOT_FOUND", "Address not found")
+
 		return
 	}
 
@@ -89,6 +104,7 @@ func (h *AlertRuleHandler) Create(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Error creating alert rule: %v", err)
 		writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to create alert rule")
+
 		return
 	}
 
@@ -98,12 +114,12 @@ func (h *AlertRuleHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 func parseThreshold(raw json.RawMessage) (*float64, error) {
 	if len(raw) == 0 {
-		return nil, nil
+		return nil, nil //nolint:nilnil
 	}
 
 	// Check null before number -- json.Unmarshal treats null as valid for float64 (sets to 0).
 	if string(raw) == "null" {
-		return nil, nil
+		return nil, nil //nolint:nilnil
 	}
 
 	var asNumber float64
@@ -115,23 +131,26 @@ func parseThreshold(raw json.RawMessage) (*float64, error) {
 	if err := json.Unmarshal(raw, &asString); err == nil {
 		asString = strings.TrimSpace(asString)
 		if asString == "" {
-			return nil, nil
+			return nil, nil //nolint:nilnil
 		}
 		parsed, parseErr := strconv.ParseFloat(asString, 64)
 		if parseErr != nil {
 			return nil, parseErr
 		}
+
 		return &parsed, nil
 	}
 
-	return nil, fmt.Errorf("unsupported threshold format")
+	return nil, errThresholdFormat
 }
 
+// ListByAddress handles GET requests to list alert rules for an address.
 func (h *AlertRuleHandler) ListByAddress(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r.Context())
 	addressID, ok := parseIntParam(r.PathValue("addressId"))
 	if !ok {
 		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid address ID")
+
 		return
 	}
 
@@ -141,11 +160,13 @@ func (h *AlertRuleHandler) ListByAddress(w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		log.Printf("Error finding address: %v", err)
 		writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to list alerts")
+
 		return
 	}
 	if addr == nil {
 		log.Printf("Address %d not found or not owned by user", addressID)
 		writeError(w, http.StatusNotFound, "NOT_FOUND", "Address not found")
+
 		return
 	}
 
@@ -153,6 +174,7 @@ func (h *AlertRuleHandler) ListByAddress(w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		log.Printf("Error listing alerts: %v", err)
 		writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to list alerts")
+
 		return
 	}
 
@@ -164,11 +186,13 @@ func (h *AlertRuleHandler) ListByAddress(w http.ResponseWriter, r *http.Request)
 	writeJSON(w, http.StatusOK, alerts)
 }
 
+// UpdateStatus handles PATCH requests to enable or disable an alert rule.
 func (h *AlertRuleHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r.Context())
 	alertID, ok := parseIntParam(r.PathValue("alertId"))
 	if !ok {
 		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid alert ID")
+
 		return
 	}
 
@@ -178,6 +202,7 @@ func (h *AlertRuleHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) 
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		log.Printf("Failed to decode update request body: %v", err)
 		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid request body")
+
 		return
 	}
 
@@ -185,6 +210,7 @@ func (h *AlertRuleHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) 
 
 	if body.Enabled == nil {
 		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "enabled must be a boolean value")
+
 		return
 	}
 
@@ -192,11 +218,13 @@ func (h *AlertRuleHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		log.Printf("Error finding alert: %v", err)
 		writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to update alert")
+
 		return
 	}
 	if alert == nil {
 		log.Printf("Alert %d not found or not owned by user", alertID)
 		writeError(w, http.StatusNotFound, "NOT_FOUND", "Alert rule not found")
+
 		return
 	}
 
@@ -204,6 +232,7 @@ func (h *AlertRuleHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		log.Printf("Error updating alert: %v", err)
 		writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to update alert")
+
 		return
 	}
 
@@ -211,11 +240,13 @@ func (h *AlertRuleHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) 
 	writeJSON(w, http.StatusOK, updated)
 }
 
+// Remove handles DELETE requests to remove an alert rule.
 func (h *AlertRuleHandler) Remove(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r.Context())
 	alertID, ok := parseIntParam(r.PathValue("alertId"))
 	if !ok {
 		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid alert ID")
+
 		return
 	}
 
@@ -225,17 +256,20 @@ func (h *AlertRuleHandler) Remove(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Error finding alert: %v", err)
 		writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to delete alert")
+
 		return
 	}
 	if alert == nil {
 		log.Printf("Alert %d not found or not owned by user", alertID)
 		writeError(w, http.StatusNotFound, "NOT_FOUND", "Alert rule not found")
+
 		return
 	}
 
 	if _, err := h.alertRules.Remove(r.Context(), alertID); err != nil {
 		log.Printf("Error deleting alert: %v", err)
 		writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to delete alert")
+
 		return
 	}
 

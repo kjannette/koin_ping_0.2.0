@@ -1,3 +1,4 @@
+// Package main is the entry point for the blockchain observer poller.
 package main
 
 import (
@@ -18,6 +19,14 @@ import (
 	"github.com/kjannette/koin-ping/backend-go/internal/services"
 )
 
+const (
+	// separatorWidth is the number of characters in log separator lines.
+	separatorWidth = 60
+	// msPerSecond converts milliseconds to seconds.
+	msPerSecond = 1000
+)
+
+//nolint:funlen
 func main() {
 	_ = godotenv.Load()
 
@@ -34,12 +43,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
-	defer database.Close()
 
 	eth, err := ethereum.NewJsonRpcEthereum(cfg.EthRPCURL)
 	if err != nil {
 		log.Fatalf("Failed to create Ethereum observer: %v", err)
 	}
+
+	defer database.Close()
 
 	addressModel := models.NewAddressModel(pool)
 	alertRuleModel := models.NewAlertRuleModel(pool)
@@ -58,20 +68,20 @@ func main() {
 	go func() {
 		<-sigCh
 		log.Println()
-		log.Println(strings.Repeat("=", 60))
+		log.Println(strings.Repeat("=", separatorWidth))
 		log.Println("Shutting down poller gracefully...")
-		log.Println(strings.Repeat("=", 60))
+		log.Println(strings.Repeat("=", separatorWidth))
 		cancel()
 	}()
 
 	interval := time.Duration(cfg.PollIntervalMS) * time.Millisecond
 
-	log.Println(strings.Repeat("=", 60))
+	log.Println(strings.Repeat("=", separatorWidth))
 	log.Println("Koin Ping Observer Poller Starting")
-	log.Println(strings.Repeat("=", 60))
+	log.Println(strings.Repeat("=", separatorWidth))
 	log.Printf("RPC URL: %s", cfg.EthRPCURL)
-	log.Printf("Poll Interval: %dms (%ds)", cfg.PollIntervalMS, cfg.PollIntervalMS/1000)
-	log.Println(strings.Repeat("=", 60))
+	log.Printf("Poll Interval: %dms (%ds)", cfg.PollIntervalMS, cfg.PollIntervalMS/msPerSecond)
+	log.Println(strings.Repeat("=", separatorWidth))
 
 	runCycle(ctx, observer, evaluator)
 
@@ -82,6 +92,7 @@ func main() {
 		select {
 		case <-ctx.Done():
 			log.Println("Poller stopped")
+
 			return
 		case <-ticker.C:
 			runCycle(ctx, observer, evaluator)
@@ -89,19 +100,25 @@ func main() {
 	}
 }
 
-func runCycle(ctx context.Context, observer *services.ObserverService, evaluator *services.EvaluatorService) {
+func runCycle(
+	ctx context.Context,
+	observer *services.ObserverService,
+	evaluator *services.EvaluatorService,
+) {
 	startTime := time.Now()
 	log.Printf("[%s] Starting observation cycle...", time.Now().UTC().Format(time.RFC3339))
 
 	observations, err := observer.RunOnce(ctx)
 	if err != nil {
 		log.Printf("[%s] Observation cycle failed: %v", time.Now().UTC().Format(time.RFC3339), err)
+
 		return
 	}
 
 	alertsFired, err := evaluator.Evaluate(ctx, observations)
 	if err != nil {
 		log.Printf("[%s] Evaluation failed: %v", time.Now().UTC().Format(time.RFC3339), err)
+
 		return
 	}
 

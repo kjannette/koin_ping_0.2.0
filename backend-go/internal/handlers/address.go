@@ -1,3 +1,4 @@
+// Package handlers implements HTTP request handlers for the API.
 package handlers
 
 import (
@@ -14,14 +15,17 @@ import (
 
 var ethAddressRe = regexp.MustCompile(`^0x[a-fA-F0-9]{40}$`)
 
+// AddressHandler handles HTTP requests for address management.
 type AddressHandler struct {
 	addresses *models.AddressModel
 }
 
+// NewAddressHandler creates a new AddressHandler.
 func NewAddressHandler(addresses *models.AddressModel) *AddressHandler {
 	return &AddressHandler{addresses: addresses}
 }
 
+// Create handles POST requests to add a new tracked address.
 func (h *AddressHandler) Create(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r.Context())
 
@@ -32,16 +36,19 @@ func (h *AddressHandler) Create(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		log.Printf("Failed to decode address request body: %v", err)
 		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid request body")
+
 		return
 	}
 
 	if body.Address == "" {
 		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Address is required")
+
 		return
 	}
 
 	if !ethAddressRe.MatchString(body.Address) {
 		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid Ethereum address format")
+
 		return
 	}
 
@@ -51,10 +58,12 @@ func (h *AddressHandler) Create(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if strings.Contains(err.Error(), "23505") || strings.Contains(err.Error(), "unique") {
 			writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "You are already tracking this address")
+
 			return
 		}
 		log.Printf("Error creating address: %v", err)
 		writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to create address")
+
 		return
 	}
 
@@ -62,6 +71,7 @@ func (h *AddressHandler) Create(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, addr)
 }
 
+// List handles GET requests to list all tracked addresses for the current user.
 func (h *AddressHandler) List(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r.Context())
 	log.Printf("User %s listing addresses", userID)
@@ -70,6 +80,7 @@ func (h *AddressHandler) List(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Error listing addresses: %v", err)
 		writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to list addresses")
+
 		return
 	}
 
@@ -81,11 +92,13 @@ func (h *AddressHandler) List(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, addresses)
 }
 
+// Remove handles DELETE requests to remove a tracked address.
 func (h *AddressHandler) Remove(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r.Context())
 	addressID, ok := parseIntParam(r.PathValue("addressId"))
 	if !ok {
 		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid address ID")
+
 		return
 	}
 
@@ -95,12 +108,14 @@ func (h *AddressHandler) Remove(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Error deleting address: %v", err)
 		writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to delete address")
+
 		return
 	}
 
 	if !deleted {
 		log.Printf("Address %d not found or not owned by user", addressID)
 		writeError(w, http.StatusNotFound, "NOT_FOUND", "Address not found")
+
 		return
 	}
 

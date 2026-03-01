@@ -1,10 +1,10 @@
+// Package main is the entry point for the API server.
 package main
 
 import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/joho/godotenv"
 	"github.com/kjannette/koin-ping/backend-go/internal/config"
@@ -15,6 +15,7 @@ import (
 	"github.com/kjannette/koin-ping/backend-go/internal/models"
 )
 
+//nolint:funlen
 func main() {
 	_ = godotenv.Load() // .env is optional; env vars can also be set externally
 
@@ -27,11 +28,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
-	defer database.Close()
 
 	if err := firebase.Init(cfg.FirebaseProjectID); err != nil {
 		log.Fatalf("Failed to initialize Firebase: %v", err)
 	}
+
+	defer database.Close()
 
 	addressModel := models.NewAddressModel(pool)
 	alertRuleModel := models.NewAlertRuleModel(pool)
@@ -51,23 +53,34 @@ func main() {
 	mux.HandleFunc("GET "+b+"/status", handlers.SystemStatus)
 
 	// Authenticated routes — addresses
-	mux.Handle("POST "+b+"/addresses", middleware.Authenticate(http.HandlerFunc(addressHandler.Create)))
-	mux.Handle("GET "+b+"/addresses", middleware.Authenticate(http.HandlerFunc(addressHandler.List)))
-	mux.Handle("DELETE "+b+"/addresses/{addressId}", middleware.Authenticate(http.HandlerFunc(addressHandler.Remove)))
+	mux.Handle("POST "+b+"/addresses",
+		middleware.Authenticate(http.HandlerFunc(addressHandler.Create)))
+	mux.Handle("GET "+b+"/addresses",
+		middleware.Authenticate(http.HandlerFunc(addressHandler.List)))
+	mux.Handle("DELETE "+b+"/addresses/{addressId}",
+		middleware.Authenticate(http.HandlerFunc(addressHandler.Remove)))
 
 	// Authenticated routes — alert rules
-	mux.Handle("POST "+b+"/addresses/{addressId}/alerts", middleware.Authenticate(http.HandlerFunc(alertRuleHandler.Create)))
-	mux.Handle("GET "+b+"/addresses/{addressId}/alerts", middleware.Authenticate(http.HandlerFunc(alertRuleHandler.ListByAddress)))
-	mux.Handle("PATCH "+b+"/alerts/{alertId}", middleware.Authenticate(http.HandlerFunc(alertRuleHandler.UpdateStatus)))
-	mux.Handle("DELETE "+b+"/alerts/{alertId}", middleware.Authenticate(http.HandlerFunc(alertRuleHandler.Remove)))
+	mux.Handle("POST "+b+"/addresses/{addressId}/alerts",
+		middleware.Authenticate(http.HandlerFunc(alertRuleHandler.Create)))
+	mux.Handle("GET "+b+"/addresses/{addressId}/alerts",
+		middleware.Authenticate(http.HandlerFunc(alertRuleHandler.ListByAddress)))
+	mux.Handle("PATCH "+b+"/alerts/{alertId}",
+		middleware.Authenticate(http.HandlerFunc(alertRuleHandler.UpdateStatus)))
+	mux.Handle("DELETE "+b+"/alerts/{alertId}",
+		middleware.Authenticate(http.HandlerFunc(alertRuleHandler.Remove)))
 
 	// Authenticated routes — alert events
-	mux.Handle("GET "+b+"/alert-events", middleware.Authenticate(http.HandlerFunc(alertEventHandler.List)))
+	mux.Handle("GET "+b+"/alert-events",
+		middleware.Authenticate(http.HandlerFunc(alertEventHandler.List)))
 
 	// Authenticated routes — notification config
-	mux.Handle("GET "+b+"/notification-config", middleware.Authenticate(http.HandlerFunc(notifConfigHandler.GetConfig)))
-	mux.Handle("PUT "+b+"/notification-config", middleware.Authenticate(http.HandlerFunc(notifConfigHandler.UpdateConfig)))
-	mux.Handle("DELETE "+b+"/notification-config", middleware.Authenticate(http.HandlerFunc(notifConfigHandler.DeleteConfig)))
+	mux.Handle("GET "+b+"/notification-config",
+		middleware.Authenticate(http.HandlerFunc(notifConfigHandler.GetConfig)))
+	mux.Handle("PUT "+b+"/notification-config",
+		middleware.Authenticate(http.HandlerFunc(notifConfigHandler.UpdateConfig)))
+	mux.Handle("DELETE "+b+"/notification-config",
+		middleware.Authenticate(http.HandlerFunc(notifConfigHandler.DeleteConfig)))
 
 	handler := corsMiddleware(mux)
 
@@ -76,9 +89,12 @@ func main() {
 	log.Printf("API base path: %s", cfg.APIBasePath)
 	log.Printf("Environment: %s", cfg.NodeEnv)
 
-	if err := http.ListenAndServe(addr, handler); err != nil {
+	server := &http.Server{
+		Addr:    addr,
+		Handler: handler,
+	}
+	if err := server.ListenAndServe(); err != nil {
 		log.Fatalf("Server failed: %v", err)
-		os.Exit(1)
 	}
 }
 
@@ -90,6 +106,7 @@ func corsMiddleware(next http.Handler) http.Handler {
 
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
+
 			return
 		}
 
