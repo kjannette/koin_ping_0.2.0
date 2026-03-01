@@ -18,6 +18,8 @@ type EvaluatorService struct {
 	alertEvents  *models.AlertEventModel
 	addresses    *models.AddressModel
 	notifConfigs *models.NotificationConfigModel
+	resendAPIKey string
+	emailFrom    string
 }
 
 func NewEvaluatorService(
@@ -26,6 +28,8 @@ func NewEvaluatorService(
 	alertEvents *models.AlertEventModel,
 	addresses *models.AddressModel,
 	notifConfigs *models.NotificationConfigModel,
+	resendAPIKey string,
+	emailFrom string,
 ) *EvaluatorService {
 	return &EvaluatorService{
 		eth:          eth,
@@ -33,6 +37,8 @@ func NewEvaluatorService(
 		alertEvents:  alertEvents,
 		addresses:    addresses,
 		notifConfigs: notifConfigs,
+		resendAPIKey: resendAPIKey,
+		emailFrom:    emailFrom,
 	}
 }
 
@@ -187,25 +193,56 @@ func (s *EvaluatorService) sendNotification(ctx context.Context, userID, message
 		return
 	}
 
-	if notifConfig == nil || !notifConfig.NotificationEnabled || notifConfig.DiscordWebhookURL == nil {
+	if notifConfig == nil || !notifConfig.NotificationEnabled {
 		return
 	}
 
-	sent, err := notifications.SendDiscordNotification(
-		*notifConfig.DiscordWebhookURL,
-		message,
-		notifications.AlertMetadata{
-			TxHash:       obs.Hash,
-			AddressLabel: addressLabel,
-			AlertType:    string(rule.Type),
-			Address:      address,
-		},
-	)
+	meta := notifications.AlertMetadata{
+		TxHash:       obs.Hash,
+		AddressLabel: addressLabel,
+		AlertType:    string(rule.Type),
+		Address:      address,
+	}
 
-	if err != nil || !sent {
-		log.Printf("Discord notification failed for user %s: %v", userID, err)
-	} else {
-		log.Printf("Discord notification sent to user %s", userID)
+	if notifConfig.DiscordWebhookURL != nil && *notifConfig.DiscordWebhookURL != "" {
+		sent, sendErr := notifications.SendDiscordNotification(*notifConfig.DiscordWebhookURL, message, meta)
+		if sendErr != nil || !sent {
+			log.Printf("Discord notification failed for user %s: %v", userID, sendErr)
+		} else {
+			log.Printf("Discord notification sent to user %s", userID)
+		}
+	}
+
+	if notifConfig.TelegramBotToken != nil && *notifConfig.TelegramBotToken != "" &&
+		notifConfig.TelegramChatID != nil && *notifConfig.TelegramChatID != "" {
+		sent, sendErr := notifications.SendTelegramNotification(
+			*notifConfig.TelegramBotToken, *notifConfig.TelegramChatID, message, meta,
+		)
+		if sendErr != nil || !sent {
+			log.Printf("Telegram notification failed for user %s: %v", userID, sendErr)
+		} else {
+			log.Printf("Telegram notification sent to user %s", userID)
+		}
+	}
+
+	if notifConfig.SlackWebhookURL != nil && *notifConfig.SlackWebhookURL != "" {
+		sent, sendErr := notifications.SendSlackNotification(*notifConfig.SlackWebhookURL, message, meta)
+		if sendErr != nil || !sent {
+			log.Printf("Slack notification failed for user %s: %v", userID, sendErr)
+		} else {
+			log.Printf("Slack notification sent to user %s", userID)
+		}
+	}
+
+	if notifConfig.Email != nil && *notifConfig.Email != "" {
+		sent, sendErr := notifications.SendEmailNotification(
+			s.resendAPIKey, s.emailFrom, *notifConfig.Email, message, meta,
+		)
+		if sendErr != nil || !sent {
+			log.Printf("Email notification failed for user %s: %v", userID, sendErr)
+		} else {
+			log.Printf("Email notification sent to user %s", userID)
+		}
 	}
 }
 

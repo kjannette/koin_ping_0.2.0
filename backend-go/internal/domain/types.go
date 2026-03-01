@@ -103,8 +103,9 @@ type NotificationConfig struct {
 	UserID              string     `json:"user_id"`              //nolint:tagliatelle
 	DiscordWebhookURL   *string    `json:"discord_webhook_url"`  //nolint:tagliatelle
 	TelegramChatID      *string    `json:"telegram_chat_id"`     //nolint:tagliatelle
-	TelegramBotToken    *string    `json:"telegram_bot_token,omitempty"` //nolint:tagliatelle
+	TelegramBotToken    *string    `json:"telegram_bot_token"`   //nolint:tagliatelle
 	Email               *string    `json:"email"`
+	SlackWebhookURL     *string    `json:"slack_webhook_url"`    //nolint:tagliatelle
 	NotificationEnabled bool       `json:"notification_enabled"` //nolint:tagliatelle
 	CreatedAt           *time.Time `json:"created_at,omitempty"` //nolint:tagliatelle
 	UpdatedAt           *time.Time `json:"updated_at,omitempty"` //nolint:tagliatelle

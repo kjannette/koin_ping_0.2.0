@@ -58,7 +58,10 @@ func main() {
 	notifConfigModel := models.NewNotificationConfigModel(pool)
 
 	observer := services.NewObserverService(eth, addressModel, checkpointModel)
-	evaluator := services.NewEvaluatorService(eth, alertRuleModel, alertEventModel, addressModel, notifConfigModel)
+	evaluator := services.NewEvaluatorService(
+		eth, alertRuleModel, alertEventModel, addressModel, notifConfigModel,
+		cfg.ResendAPIKey, cfg.EmailFrom,
+	)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

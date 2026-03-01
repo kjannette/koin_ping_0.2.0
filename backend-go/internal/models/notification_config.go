@@ -21,12 +21,12 @@ func (m *NotificationConfigModel) GetConfig(ctx context.Context, userID string) 
 	var c domain.NotificationConfig
 	err := m.pool.QueryRow(ctx,
 		`SELECT user_id, discord_webhook_url, telegram_chat_id, telegram_bot_token,
-		        email, notification_enabled, created_at, updated_at
+		        email, slack_webhook_url, notification_enabled, created_at, updated_at
 		 FROM user_notification_configs
 		 WHERE user_id = $1`,
 		userID,
 	).Scan(&c.UserID, &c.DiscordWebhookURL, &c.TelegramChatID, &c.TelegramBotToken,
-		&c.Email, &c.NotificationEnabled, &c.CreatedAt, &c.UpdatedAt)
+		&c.Email, &c.SlackWebhookURL, &c.NotificationEnabled, &c.CreatedAt, &c.UpdatedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
@@ -40,22 +40,24 @@ func (m *NotificationConfigModel) UpsertConfig(ctx context.Context, userID strin
 	var c domain.NotificationConfig
 	err := m.pool.QueryRow(ctx,
 		`INSERT INTO user_notification_configs
-		   (user_id, discord_webhook_url, telegram_chat_id, telegram_bot_token, email, notification_enabled, updated_at)
-		 VALUES ($1, $2, $3, $4, $5, $6, NOW())
+		   (user_id, discord_webhook_url, telegram_chat_id, telegram_bot_token,
+		    email, slack_webhook_url, notification_enabled, updated_at)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
 		 ON CONFLICT (user_id)
 		 DO UPDATE SET
 		   discord_webhook_url = COALESCE($2, user_notification_configs.discord_webhook_url),
 		   telegram_chat_id = COALESCE($3, user_notification_configs.telegram_chat_id),
 		   telegram_bot_token = COALESCE($4, user_notification_configs.telegram_bot_token),
 		   email = COALESCE($5, user_notification_configs.email),
-		   notification_enabled = $6,
+		   slack_webhook_url = COALESCE($6, user_notification_configs.slack_webhook_url),
+		   notification_enabled = $7,
 		   updated_at = NOW()
 		 RETURNING user_id, discord_webhook_url, telegram_chat_id, telegram_bot_token,
-		           email, notification_enabled, created_at, updated_at`,
+		           email, slack_webhook_url, notification_enabled, created_at, updated_at`,
 		userID, cfg.DiscordWebhookURL, cfg.TelegramChatID, cfg.TelegramBotToken,
-		cfg.Email, cfg.NotificationEnabled,
+		cfg.Email, cfg.SlackWebhookURL, cfg.NotificationEnabled,
 	).Scan(&c.UserID, &c.DiscordWebhookURL, &c.TelegramChatID, &c.TelegramBotToken,
-		&c.Email, &c.NotificationEnabled, &c.CreatedAt, &c.UpdatedAt)
+		&c.Email, &c.SlackWebhookURL, &c.NotificationEnabled, &c.CreatedAt, &c.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +77,8 @@ func (m *NotificationConfigModel) Remove(ctx context.Context, userID string) (bo
 
 func (m *NotificationConfigModel) ListEnabled(ctx context.Context) ([]domain.NotificationConfig, error) {
 	rows, err := m.pool.Query(ctx,
-		`SELECT user_id, discord_webhook_url, telegram_chat_id, email
+		`SELECT user_id, discord_webhook_url, telegram_chat_id, telegram_bot_token,
+		        email, slack_webhook_url
 		 FROM user_notification_configs
 		 WHERE notification_enabled = TRUE`,
 	)
@@ -87,7 +90,8 @@ func (m *NotificationConfigModel) ListEnabled(ctx context.Context) ([]domain.Not
 	var configs []domain.NotificationConfig
 	for rows.Next() {
 		var c domain.NotificationConfig
-		if err := rows.Scan(&c.UserID, &c.DiscordWebhookURL, &c.TelegramChatID, &c.Email); err != nil {
+		if err := rows.Scan(&c.UserID, &c.DiscordWebhookURL, &c.TelegramChatID,
+			&c.TelegramBotToken, &c.Email, &c.SlackWebhookURL); err != nil {
 			return nil, err
 		}
 		c.NotificationEnabled = true
