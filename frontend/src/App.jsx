@@ -3,6 +3,7 @@ import { useAuth } from "./contexts/AuthContext";
 import Navbar from "./components/Navbar";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import Onboarding from "./pages/Onboarding";
 import Addresses from "./pages/Addresses";
 import Alerts from "./pages/Alerts";
 import AlertHistory from "./pages/AlertHistory";
@@ -15,6 +16,7 @@ export default function App() {
             <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
+                <Route path="/onboarding" element={<Onboarding />} />
                 <Route path="*" element={<Navigate to="/login" />} />
             </Routes>
         );
@@ -28,6 +30,7 @@ export default function App() {
                 <Route path="/addresses" element={<Addresses />} />
                 <Route path="/alerts" element={<Alerts />} />
                 <Route path="/history" element={<AlertHistory />} />
+                <Route path="/onboarding" element={<Onboarding />} />
                 <Route path="*" element={<Navigate to="/addresses" />} />
             </Routes>
         </div>
