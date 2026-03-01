@@ -1,6 +1,5 @@
-
-import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
 import {
     firebaseApiKey,
     firebaseAuthDomain,
@@ -8,9 +7,8 @@ import {
     firebaseStorageBucket,
     firebaseMessagingSenderId,
     firebaseAppId,
-    firebaseMeasurementId
-} from '../secrets.js';
-
+    firebaseMeasurementId,
+} from "../secrets.js";
 
 const firebaseConfig = {
     apiKey: firebaseApiKey,
@@ -19,12 +17,11 @@ const firebaseConfig = {
     storageBucket: firebaseStorageBucket,
     messagingSenderId: firebaseMessagingSenderId,
     appId: firebaseAppId,
-    measurementId: firebaseMeasurementId
-  };
+    measurementId: firebaseMeasurementId,
+};
 
 const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 
 export default app;
-

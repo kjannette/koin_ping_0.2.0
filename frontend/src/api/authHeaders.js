@@ -1,30 +1,30 @@
 /**
  * Auth Headers Helper
- * 
+ *
  * Provides authentication headers for API calls
  * Includes Firebase ID token in Authorization header
  */
 
-import { auth } from '../firebase/config';
+import { auth } from "../firebase/config";
 
 /**
  * Get headers with authentication token
  * @returns {Promise<Object>} Headers object with Authorization
  */
 export async function getAuthHeaders() {
-  const currentUser = auth.currentUser;
-  
-  if (!currentUser) {
-    throw new Error('No authenticated user');
-  }
+    const currentUser = auth.currentUser;
 
-  // Get Firebase ID token
-  const token = await currentUser.getIdToken();
+    if (!currentUser) {
+        throw new Error("No authenticated user");
+    }
 
-  return {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`
-  };
+    // Get Firebase ID token
+    const token = await currentUser.getIdToken();
+
+    return {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+    };
 }
 
 /**
@@ -32,16 +32,15 @@ export async function getAuthHeaders() {
  * @returns {Promise<Object>} Headers object with Authorization
  */
 export async function getAuthHeadersSimple() {
-  const currentUser = auth.currentUser;
-  
-  if (!currentUser) {
-    throw new Error('No authenticated user');
-  }
+    const currentUser = auth.currentUser;
 
-  const token = await currentUser.getIdToken();
+    if (!currentUser) {
+        throw new Error("No authenticated user");
+    }
 
-  return {
-    'Authorization': `Bearer ${token}`
-  };
+    const token = await currentUser.getIdToken();
+
+    return {
+        Authorization: `Bearer ${token}`,
+    };
 }
-

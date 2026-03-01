@@ -1,3 +1,4 @@
+// Package middleware provides HTTP middleware for authentication and context injection.
 package middleware
 
 import (

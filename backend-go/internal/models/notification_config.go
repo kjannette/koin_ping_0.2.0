@@ -2,7 +2,9 @@ package models
 
 import (
 	"context"
+	"errors"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/kjannette/koin-ping/backend-go/internal/domain"
 )
@@ -26,7 +28,7 @@ func (m *NotificationConfigModel) GetConfig(ctx context.Context, userID string) 
 	).Scan(&c.UserID, &c.DiscordWebhookURL, &c.TelegramChatID, &c.TelegramBotToken,
 		&c.Email, &c.NotificationEnabled, &c.CreatedAt, &c.UpdatedAt)
 	if err != nil {
-		if err.Error() == "no rows in result set" {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, err

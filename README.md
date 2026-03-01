@@ -1,95 +1,122 @@
 # Koin Ping
 
-A lightweight on-chain monitoring and alerting system designed to give users situational awareness over blockchain addresses they care about.
-
-## Overview
-
-Koin Ping is designed to reliably observe on-chain activity and notify users when predefined conditions are met. It does not execute transactions, manage wallets, or speculate on prices.
-
-## Project Structure
-
-```
-koin_ping/
-├── backend/                  # Node.js + Express + PostgreSQL backend
-│   ├── api/                 # API endpoints and server configuration
-│   ├── poller/              # Blockchain polling logic
-│   ├── alerts/              # Alert evaluation and management
-│   ├── notifications/       # Notification delivery system
-│   ├── domain/              # Domain models and business logic
-│   ├── infra/               # Infrastructure (database, external services)
-│   └── shared/              # Shared utilities and helpers
-│
-└── frontend/                 # React + Vite frontend
-    ├── public/              # Static assets
-    └── src/
-        ├── api/             # Frontend API calls to backend
-        ├── components/      # Reusable UI components
-        ├── pages/           # Top-level pages (views)
-        └── utils/           # Utility functions
-
-```
-
-## Tech Stack
-
-### Backend
-- **Runtime:** Node.js
-- **Framework:** Express
-- **Database:** PostgreSQL
-- **Key Dependencies:** 
-  - `pg` - PostgreSQL client
-  - `dotenv` - Environment variable management
-  - `cors` - CORS middleware
-  - `nodemon` - Development auto-reload
-
-### Frontend
-- **Framework:** React 19
-- **Build Tool:** Vite
-- **Language:** JavaScript/TypeScript (mixed)
-- **Type Checking:** TypeScript
+Koin Ping is an MIT-licensed blockchain monitoring system by Steven Jannette
+that polls Ethereum addresses for on-chain activity and delivers real-time
+alerts to users via a Go REST API backend and a React single-page application
+frontend.
 
 ## Getting Started
 
 ### Prerequisites
-- Node.js (v18 or higher recommended)
-- PostgreSQL database
-- npm or yarn
 
-### Backend Setup
+- Go 1.24+
+- Node.js 18+ and npm (or yarn — preferred per repo policy)
+- PostgreSQL 15+
+- `golangci-lint` v2 (for `make lint`)
 
-1. Navigate to the backend directory:
-   ```bash
-   cd backend
-   ```
+### Setup
 
-2. Install dependencies (already done):
-   ```bash
-   npm install
-   ```
+```bash
+# Clone and enter the repo
+git clone <repo-url>
+cd koin_ping_0.2.0
 
-3. Create a `.env` file (see backend/README.md for required variables)
+# Install pre-commit hook
+make hooks
 
-4. Start the development server:
-   ```bash
-   npm run dev
-   ```
+# Install frontend dependencies
+cd frontend && npm install && cd ..
 
-The backend will run on `http://localhost:3001`
+# Copy and fill in environment variables
+cp backend-go/.env.example backend-go/.env
+# edit backend-go/.env with your DATABASE_URL, FIREBASE_PROJECT_ID, ETH_RPC_URL
 
-### Frontend Setup
+# Run checks (requires golangci-lint)
+make check
 
-1. Navigate to the frontend directory:
-   ```bash
-   cd frontend
-   ```
+# Start the API server
+make run
 
-2. Install dependencies (already done):
-   ```bash
-   npm install
-   ```
+# Start the poller (separate terminal)
+cd backend-go && go run ./cmd/poller
 
-3. Start the development server:
-   ```bash
-   npm run dev
-   ```
+# Start the frontend dev server (separate terminal)
+cd frontend && npm run dev
+```
 
-The frontend will run on `http://localhost:3000`
+The API listens on `http://localhost:3001` and the frontend on
+`http://localhost:3000` by default.
+
+## Rationale
+
+Crypto users who hold or actively monitor addresses need a lightweight, reliable
+way to know when on-chain activity occurs without polling block explorers
+manually. Koin Ping fills that gap: it watches a set of Ethereum addresses,
+evaluates configurable alert rules (incoming transactions, outgoing
+transactions, large transfers, balance thresholds), and notifies the user
+through Discord webhooks.
+
+## Design
+
+The system is split into two independently deployable processes and one
+frontend:
+
+```
+koin_ping_0.2.0/
+├── backend-go/                # Go monorepo root
+│   ├── cmd/api/               # HTTP REST API server
+│   ├── cmd/poller/            # Blockchain polling daemon
+│   └── internal/
+│       ├── config/            # Environment-based config loading
+│       ├── database/          # pgx connection pool
+│       ├── domain/            # Shared domain types
+│       ├── firebase/          # Firebase auth client
+│       ├── handlers/          # HTTP handler wiring
+│       ├── middleware/         # Auth middleware
+│       ├── models/            # SQL persistence layer
+│       ├── notifications/     # Discord webhook delivery
+│       ├── protocols/ethereum/ # Ethereum JSON-RPC client
+│       ├── services/          # Observer and evaluator business logic
+│       └── wei/               # ETH/Wei conversion utilities
+└── frontend/                  # React + Vite SPA
+    └── src/
+        ├── api/               # Fetch wrappers for the REST API
+        ├── components/        # Reusable UI components
+        ├── contexts/          # React contexts (auth, etc.)
+        ├── firebase/          # Firebase SDK initialization
+        └── pages/             # Top-level route pages
+```
+
+**API server** (`cmd/api`): standard-library `net/http` with Firebase JWT
+authentication middleware. Exposes CRUD endpoints for addresses, alert rules,
+alert events, and notification configuration.
+
+**Poller** (`cmd/poller`): long-running daemon that polls Ethereum via JSON-RPC,
+compares observed transactions against persisted alert rules, fires alert events
+to the database, and dispatches Discord notifications.
+
+**Frontend** (`frontend/`): React 19 SPA built with Vite. Authenticates with
+Firebase, communicates with the API via fetch, and renders the address/alert
+management UI.
+
+## TODO
+
+- [ ] Switch frontend package manager from npm to yarn (per repo policy)
+- [ ] Rename `go.mod` module path from `github.com/kjannette/koin-ping` to
+      `sneak.berlin/go/koin-ping` (per repo policy)
+- [ ] Move database migrations to `internal/db/migrations/` and embed them in
+      the binary
+- [ ] Pin all Docker base images by `@sha256` in Dockerfile
+- [ ] Install `golangci-lint` locally and pass `make lint`
+- [ ] Add vitest unit tests for the React frontend
+- [ ] Add a `make db-reset` / `make migrate` target for schema management
+- [ ] Set HTTP server read/write timeouts (currently unbounded)
+- [ ] Replace `log.Printf` calls with structured `log/slog`
+
+## License
+
+MIT. See [LICENSE](LICENSE).
+
+## Author
+
+Steven Jannette

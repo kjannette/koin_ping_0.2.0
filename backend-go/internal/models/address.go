@@ -2,7 +2,9 @@ package models
 
 import (
 	"context"
+	"errors"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/kjannette/koin-ping/backend-go/internal/domain"
 )
@@ -97,7 +99,7 @@ func (m *AddressModel) FindByID(ctx context.Context, id int, userID *string) (*d
 	}
 
 	if err != nil {
-		if err.Error() == "no rows in result set" {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, err

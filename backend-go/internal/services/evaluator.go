@@ -170,7 +170,11 @@ func (s *EvaluatorService) fireAlert(ctx context.Context, rule domain.AlertRule,
 
 	// Send Discord notification (non-fatal on failure)
 	if addr != nil {
-		go s.sendNotification(ctx, addr.UserID, message, obs, addressLabel, rule, addr.Address)
+		go func() {
+			s.sendNotification(
+				ctx, addr.UserID, message, obs, addressLabel, rule, addr.Address,
+			)
+		}()
 	}
 
 	return nil

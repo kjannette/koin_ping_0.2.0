@@ -1,3 +1,4 @@
+// Package firebase provides Firebase authentication integration.
 package firebase
 
 import (
@@ -10,12 +11,13 @@ import (
 	"google.golang.org/api/option"
 )
 
-var (
-	authClient *auth.Client
-	once       sync.Once
-	initErr    error
+var ( //nolint:gochecknoglobals
+	authClient *auth.Client //nolint:gochecknoglobals
+	once       sync.Once    //nolint:gochecknoglobals
+	errInit    error        //nolint:gochecknoglobals
 )
 
+// Init initializes the Firebase app and auth client using the given project ID.
 func Init(projectID string) error {
 	once.Do(func() {
 		ctx := context.Background()
@@ -30,20 +32,23 @@ func Init(projectID string) error {
 			app, err = fb.NewApp(ctx, nil)
 		}
 		if err != nil {
-			initErr = fmt.Errorf("initialize firebase app: %w", err)
+			errInit = fmt.Errorf("initialize firebase app: %w", err)
+
 			return
 		}
 
 		authClient, err = app.Auth(ctx)
 		if err != nil {
-			initErr = fmt.Errorf("initialize firebase auth: %w", err)
+			errInit = fmt.Errorf("initialize firebase auth: %w", err)
+
 			return
 		}
 	})
 
-	return initErr
+	return errInit
 }
 
+// Auth returns the initialized Firebase auth client.
 func Auth() *auth.Client {
 	return authClient
 }

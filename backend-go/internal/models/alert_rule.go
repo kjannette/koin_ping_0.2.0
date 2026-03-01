@@ -2,7 +2,9 @@ package models
 
 import (
 	"context"
+	"errors"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/kjannette/koin-ping/backend-go/internal/domain"
 )
@@ -21,7 +23,7 @@ func (m *AlertRuleModel) Create(ctx context.Context, addressID int, alertType do
 		`INSERT INTO alert_rules (address_id, type, threshold, enabled)
 		 VALUES ($1, $2, $3, TRUE)
 		 RETURNING id, address_id, type, threshold, enabled, created_at`,
-		addressID, string(alertType), threshold,
+		addressID, alertType.String(), threshold,
 	).Scan(&r.ID, &r.AddressID, &r.Type, &r.Threshold, &r.Enabled, &r.CreatedAt)
 	if err != nil {
 		return nil, err
@@ -75,7 +77,7 @@ func (m *AlertRuleModel) FindByID(ctx context.Context, id int, userID *string) (
 	}
 
 	if err != nil {
-		if err.Error() == "no rows in result set" {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, err
@@ -93,7 +95,7 @@ func (m *AlertRuleModel) UpdateEnabled(ctx context.Context, id int, enabled bool
 		id, enabled,
 	).Scan(&r.ID, &r.AddressID, &r.Type, &r.Threshold, &r.Enabled, &r.CreatedAt)
 	if err != nil {
-		if err.Error() == "no rows in result set" {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, err

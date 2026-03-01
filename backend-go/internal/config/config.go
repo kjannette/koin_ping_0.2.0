@@ -1,3 +1,4 @@
+//loads environment-based configuration.
 package config
 
 import (
@@ -5,6 +6,13 @@ import (
 	"os"
 	"strconv"
 	"strings"
+)
+
+const (
+	defaultPort = 3001
+	defaultDBPort = 5432
+	defaultPollIntervalMS = 60000
+	minPollIntervalMS = 1000
 )
 
 type Config struct {
@@ -22,24 +30,25 @@ type Config struct {
 	NodeEnv           string
 }
 
+// Load reads configuration from environment variables and returns a Config.
 func Load() (*Config, error) {
 	cfg := &Config{
-		Port:           getEnvInt("PORT", 3001),
-		APIBasePath:    getEnv("API_BASE_PATH", "/v1"),
-		DatabaseURL:    os.Getenv("DATABASE_URL"),
-		DBHost:         getEnv("DB_HOST", "localhost"),
-		DBPort:         getEnvInt("DB_PORT", 5432),
-		DBUser:         os.Getenv("DB_USER"),
-		DBPassword:     os.Getenv("DB_PASSWORD"),
-		DBName:         os.Getenv("DB_NAME"),
+		Port:              getEnvInt("PORT", defaultPort),
+		APIBasePath:       getEnv("API_BASE_PATH", "/v1"),
+		DatabaseURL:       os.Getenv("DATABASE_URL"),
+		DBHost:            getEnv("DB_HOST", "localhost"),
+		DBPort:            getEnvInt("DB_PORT", defaultDBPort),
+		DBUser:            os.Getenv("DB_USER"),
+		DBPassword:        os.Getenv("DB_PASSWORD"),
+		DBName:            os.Getenv("DB_NAME"),
 		FirebaseProjectID: os.Getenv("FIREBASE_PROJECT_ID"),
-		EthRPCURL:      os.Getenv("ETH_RPC_URL"),
-		PollIntervalMS: getEnvInt("POLL_INTERVAL_MS", 60000),
-		NodeEnv:        getEnv("NODE_ENV", "development"),
+		EthRPCURL:         os.Getenv("ETH_RPC_URL"),
+		PollIntervalMS:    getEnvInt("POLL_INTERVAL_MS", defaultPollIntervalMS),
+		NodeEnv:           getEnv("NODE_ENV", "development"),
 	}
 
-	if cfg.PollIntervalMS < 1000 {
-		return nil, fmt.Errorf("POLL_INTERVAL_MS must be >= 1000, got %d", cfg.PollIntervalMS)
+	if cfg.PollIntervalMS < minPollIntervalMS {
+		return nil, fmt.Errorf("POLL_INTERVAL_MS must be >= 1000, got %d", cfg.PollIntervalMS) //nolint:err113
 	}
 
 	return cfg, nil
@@ -47,17 +56,19 @@ func Load() (*Config, error) {
 
 func (c *Config) DSN() string {
 	if c.DatabaseURL != "" {
-		// pgx defaults to sslmode=prefer, which fails against local Postgres.
 		// Append sslmode=disable if not already specified.
 		if !strings.Contains(c.DatabaseURL, "sslmode=") {
 			sep := "?"
 			if strings.Contains(c.DatabaseURL, "?") {
 				sep = "&"
 			}
+
 			return c.DatabaseURL + sep + "sslmode=disable"
 		}
+
 		return c.DatabaseURL
 	}
+
 	return fmt.Sprintf(
 		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		c.DBHost, c.DBPort, c.DBUser, c.DBPassword, c.DBName,
@@ -68,6 +79,7 @@ func getEnv(key, fallback string) string {
 	if v := os.Getenv(key); v != "" {
 		return v
 	}
+
 	return fallback
 }
 
@@ -77,5 +89,6 @@ func getEnvInt(key string, fallback int) int {
 			return n
 		}
 	}
+
 	return fallback
 }

@@ -1,0 +1,44 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+*.swp
+*.swo
+*~
+*.bak
+.idea/
+.vscode/
+*.sublime-*
+
+# Node
+node_modules/
+
+# Environment / secrets
+.env
+.env.*
+*.pem
+*.key
+
+# Go build artifacts
+backend-go/bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+vendor/
+tmp/
+
+# Frontend build output
+frontend/dist/
+frontend/build/
+frontend/.vite/
+
+# Prompts directory (local tooling, not part of the project)
+Prompts/
+
+# Logs
+*.log

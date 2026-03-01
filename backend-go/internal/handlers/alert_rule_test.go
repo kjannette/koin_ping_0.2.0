@@ -1,3 +1,4 @@
+//nolint:testpackage // parseThreshold is unexported; internal test package required
 package handlers
 
 import (
@@ -6,8 +7,13 @@ import (
 	"testing"
 )
 
+//nolint:gocognit
 func TestParseThreshold(t *testing.T) {
+	t.Parallel()
+
 	t.Run("nil/empty raw message returns nil", func(t *testing.T) {
+		t.Parallel()
+
 		val, err := parseThreshold(nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -18,6 +24,8 @@ func TestParseThreshold(t *testing.T) {
 	})
 
 	t.Run("empty slice returns nil", func(t *testing.T) {
+		t.Parallel()
+
 		val, err := parseThreshold(json.RawMessage{})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -28,6 +36,8 @@ func TestParseThreshold(t *testing.T) {
 	})
 
 	t.Run("JSON null returns nil", func(t *testing.T) {
+		t.Parallel()
+
 		val, err := parseThreshold(json.RawMessage("null"))
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -38,6 +48,8 @@ func TestParseThreshold(t *testing.T) {
 	})
 
 	t.Run("number 10 returns 10.0", func(t *testing.T) {
+		t.Parallel()
+
 		val, err := parseThreshold(json.RawMessage("10"))
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -51,6 +63,8 @@ func TestParseThreshold(t *testing.T) {
 	})
 
 	t.Run("number 0.5 returns 0.5", func(t *testing.T) {
+		t.Parallel()
+
 		val, err := parseThreshold(json.RawMessage("0.5"))
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -61,6 +75,8 @@ func TestParseThreshold(t *testing.T) {
 	})
 
 	t.Run("string '10' returns 10.0", func(t *testing.T) {
+		t.Parallel()
+
 		val, err := parseThreshold(json.RawMessage(`"10"`))
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -71,6 +87,8 @@ func TestParseThreshold(t *testing.T) {
 	})
 
 	t.Run("string '0.001' returns 0.001", func(t *testing.T) {
+		t.Parallel()
+
 		val, err := parseThreshold(json.RawMessage(`"0.001"`))
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -81,6 +99,8 @@ func TestParseThreshold(t *testing.T) {
 	})
 
 	t.Run("string with spaces '  10  ' returns 10.0", func(t *testing.T) {
+		t.Parallel()
+
 		val, err := parseThreshold(json.RawMessage(`"  10  "`))
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -91,6 +111,8 @@ func TestParseThreshold(t *testing.T) {
 	})
 
 	t.Run("empty string returns nil", func(t *testing.T) {
+		t.Parallel()
+
 		val, err := parseThreshold(json.RawMessage(`""`))
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -101,6 +123,8 @@ func TestParseThreshold(t *testing.T) {
 	})
 
 	t.Run("whitespace-only string returns nil", func(t *testing.T) {
+		t.Parallel()
+
 		val, err := parseThreshold(json.RawMessage(`"   "`))
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -111,6 +135,8 @@ func TestParseThreshold(t *testing.T) {
 	})
 
 	t.Run("invalid string returns error", func(t *testing.T) {
+		t.Parallel()
+
 		_, err := parseThreshold(json.RawMessage(`"abc"`))
 		if err == nil {
 			t.Fatal("expected error for non-numeric string")
@@ -118,6 +144,8 @@ func TestParseThreshold(t *testing.T) {
 	})
 
 	t.Run("boolean returns error", func(t *testing.T) {
+		t.Parallel()
+
 		_, err := parseThreshold(json.RawMessage("true"))
 		if err == nil {
 			t.Fatal("expected error for boolean")
@@ -125,6 +153,8 @@ func TestParseThreshold(t *testing.T) {
 	})
 
 	t.Run("array returns error", func(t *testing.T) {
+		t.Parallel()
+
 		_, err := parseThreshold(json.RawMessage("[1,2]"))
 		if err == nil {
 			t.Fatal("expected error for array")
@@ -132,7 +162,10 @@ func TestParseThreshold(t *testing.T) {
 	})
 }
 
+//nolint:funlen
 func TestDecodeAlertBody(t *testing.T) {
+	t.Parallel()
+
 	// Verifies that the struct used in Create handler can decode all
 	// payload shapes the frontend might send.
 
@@ -183,12 +216,15 @@ func TestDecodeAlertBody(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			var body alertBody
 			err := json.Unmarshal([]byte(tt.payload), &body)
 			if tt.wantErr {
 				if err == nil {
 					t.Fatal("expected decode error")
 				}
+
 				return
 			}
 			if err != nil {
@@ -199,6 +235,8 @@ func TestDecodeAlertBody(t *testing.T) {
 }
 
 func TestOldStructFailsWithStringThreshold(t *testing.T) {
+	t.Parallel()
+
 	// Documents the original bug: *float64 cannot decode a string threshold.
 	type oldAlertBody struct {
 		Type      string   `json:"type"`
