@@ -65,6 +65,7 @@ export default function Alerts() {
     const [testingChannels, setTestingChannels] = useState(false);
     const [settingUpEmail, setSettingUpEmail] = useState(false);
     const [sendingDigest, setSendingDigest] = useState(false);
+    const [hasExistingConfig, setHasExistingConfig] = useState(false);
 
     useEffect(() => {
         async function fetchData() {
@@ -86,6 +87,14 @@ export default function Alerts() {
                 setTelegramChatId(configData.telegram_chat_id || "");
                 setEmail(configData.email || "");
                 setSlackWebhookUrl(configData.slack_webhook_url || "");
+
+                const hasSaved =
+                    !!configData.discord_webhook_url ||
+                    !!configData.telegram_bot_token ||
+                    !!configData.telegram_chat_id ||
+                    !!configData.email ||
+                    !!configData.slack_webhook_url;
+                setHasExistingConfig(hasSaved);
             } catch (err) {
                 setError(err.message);
                 console.error("Failed to fetch data:", err);
@@ -155,6 +164,13 @@ export default function Alerts() {
     }
 
     async function handleSaveNotificationConfig() {
+        if (hasExistingConfig) {
+            const confirmed = window.confirm(
+                "This will overwrite your previously saved notification settings. Continue?",
+            );
+            if (!confirmed) return;
+        }
+
         try {
             setNotificationLoading(true);
             setNotificationError(null);
@@ -170,6 +186,7 @@ export default function Alerts() {
             };
 
             await updateNotificationConfig(config);
+            setHasExistingConfig(true);
             setNotificationSuccess("Notification settings saved!");
             setTimeout(() => setNotificationSuccess(null), 3000);
         } catch (err) {
