@@ -39,7 +39,7 @@ export default function AlertHistory() {
             <h1>Recent Alerts</h1>
 
             {alertEvents.length === 0 ? (
-                <p style={{ color: "#666" }}>No alerts yet</p>
+                <p style={{ color: "#808080" }}>No alerts yet</p>
             ) : (
                 <ul style={{ listStyle: "none", padding: 0 }}>
                     {alertEvents.map((event) => (
@@ -48,8 +48,9 @@ export default function AlertHistory() {
                             style={{
                                 padding: "1rem",
                                 marginBottom: "0.75rem",
-                                border: "1px solid #ddd",
+                                border: "1px solid #444",
                                 borderRadius: "4px",
+                                backgroundColor: "#333",
                             }}
                         >
                             <div style={{ marginBottom: "0.5rem" }}>
@@ -58,15 +59,15 @@ export default function AlertHistory() {
                             {event.address_label && (
                                 <div
                                     style={{
-                                        fontSize: "0.9rem",
-                                        color: "#666",
+                                    fontSize: "1.035rem",
+                                    color: "#808080",
                                         marginBottom: "0.25rem",
                                     }}
                                 >
                                     Address: {event.address_label}
                                 </div>
                             )}
-                            <small style={{ color: "#999" }}>
+                            <small style={{ color: "#b3b3b3" }}>
                                 {formatTimestamp(event.timestamp)}
                             </small>
                         </li>

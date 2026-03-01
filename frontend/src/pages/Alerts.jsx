@@ -250,15 +250,15 @@ export default function Alerts() {
                                 style={{
                                     padding: "1rem",
                                     marginBottom: "2rem",
-                                    backgroundColor: "#2a2a2a",
+                                    backgroundColor: "#333",
                                     borderRadius: "4px",
                                     border: "1px solid #444",
                                 }}
                             >
                                 <div
                                     style={{
-                                        fontSize: "0.9rem",
-                                        color: "#999",
+                                        fontSize: "1.035rem",
+                                        color: "#b3b3b3",
                                     }}
                                 >
                                     Managing alerts for:
@@ -274,8 +274,8 @@ export default function Alerts() {
                                 <div
                                     style={{
                                         fontFamily: "monospace",
-                                        fontSize: "0.9rem",
-                                        color: "#999",
+                                        fontSize: "1.035rem",
+                                        color: "#b3b3b3",
                                     }}
                                 >
                                     {selectedAddress.address}
@@ -316,7 +316,7 @@ export default function Alerts() {
                                                     marginBottom: "0.5rem",
                                                     border: "1px solid #444",
                                                     borderRadius: "4px",
-                                                    backgroundColor: "#2a2a2a",
+                                                                    backgroundColor: "#333",
                                                     opacity: alert.enabled
                                                         ? 1
                                                         : 0.6,
@@ -348,8 +348,8 @@ export default function Alerts() {
                                                             <div
                                                                 style={{
                                                                     fontSize:
-                                                                        "0.9rem",
-                                                                    color: "#999",
+                                                                        "1.035rem",
+                                                                    color: "#b3b3b3",
                                                                 }}
                                                             >
                                                                 Threshold:{" "}
@@ -362,8 +362,8 @@ export default function Alerts() {
                                                         <div
                                                             style={{
                                                                 fontSize:
-                                                                    "0.85rem",
-                                                                color: "#666",
+                                                                    "0.978rem",
+                                                                color: "#808080",
                                                                 marginTop:
                                                                     "0.25rem",
                                                             }}
@@ -451,7 +451,7 @@ export default function Alerts() {
                         style={{
                             marginBottom: "2rem",
                             padding: "1rem",
-                            backgroundColor: "#f5f5f5",
+                            backgroundColor: "#333",
                             borderRadius: "4px",
                         }}
                     >
@@ -480,8 +480,8 @@ export default function Alerts() {
                         </label>
                         <div
                             style={{
-                                fontSize: "0.85rem",
-                                color: "#666",
+                                fontSize: "0.978rem",
+                                color: "#808080",
                                 marginTop: "0.5rem",
                                 marginLeft: "26px",
                             }}
@@ -524,8 +524,8 @@ export default function Alerts() {
                             />
                             <div
                                 style={{
-                                    fontSize: "0.85rem",
-                                    color: "#999",
+                                    fontSize: "0.978rem",
+                                    color: "#b3b3b3",
                                     marginTop: "0.5rem",
                                 }}
                             >
