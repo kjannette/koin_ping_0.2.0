@@ -28,6 +28,8 @@ type Config struct {
 	EthRPCURL         string
 	PollIntervalMS    int
 	NodeEnv           string
+	ResendAPIKey      string
+	EmailFrom         string
 }
 
 // Load reads configuration from environment variables and returns a Config.
@@ -45,6 +47,8 @@ func Load() (*Config, error) {
 		EthRPCURL:         os.Getenv("ETH_RPC_URL"),
 		PollIntervalMS:    getEnvInt("POLL_INTERVAL_MS", defaultPollIntervalMS),
 		NodeEnv:           getEnv("NODE_ENV", "development"),
+		ResendAPIKey:      os.Getenv("RESEND_API_KEY"),
+		EmailFrom:         getEnv("EMAIL_FROM", "Koin Ping <alerts@koinping.com>"),
 	}
 
 	if cfg.PollIntervalMS < minPollIntervalMS {

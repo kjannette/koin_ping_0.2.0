@@ -54,8 +54,9 @@ CREATE TABLE user_notification_configs (
   user_id VARCHAR(128) PRIMARY KEY,
   discord_webhook_url TEXT,            -- Discord webhook URL (nullable)
   telegram_chat_id VARCHAR(128),       -- Telegram chat ID (nullable)
-  telegram_bot_token VARCHAR(255),     -- Telegram bot token (nullable, future use)
+  telegram_bot_token VARCHAR(255),     -- Telegram bot token (nullable)
   email VARCHAR(255),                  -- Email for notifications (nullable)
+  slack_webhook_url TEXT,              -- Slack incoming webhook URL (nullable)
   notification_enabled BOOLEAN DEFAULT TRUE,  -- Master on/off switch
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()

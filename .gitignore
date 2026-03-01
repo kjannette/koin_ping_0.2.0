@@ -42,3 +42,4 @@ Prompts/
 
 # Logs
 *.log
+.claude

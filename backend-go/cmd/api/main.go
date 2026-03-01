@@ -14,6 +14,7 @@ import (
 	"github.com/kjannette/koin-ping/backend-go/internal/handlers"
 	"github.com/kjannette/koin-ping/backend-go/internal/middleware"
 	"github.com/kjannette/koin-ping/backend-go/internal/models"
+	"github.com/kjannette/koin-ping/backend-go/internal/services"
 )
 
 const (
@@ -48,10 +49,15 @@ func main() {
 	alertEventModel := models.NewAlertEventModel(pool)
 	notifConfigModel := models.NewNotificationConfigModel(pool)
 
+	emailDigestSvc := services.NewEmailDigestService(
+		cfg.ResendAPIKey, cfg.EmailFrom, alertEventModel, notifConfigModel,
+	)
+
 	addressHandler := handlers.NewAddressHandler(addressModel)
 	alertRuleHandler := handlers.NewAlertRuleHandler(alertRuleModel, addressModel)
 	alertEventHandler := handlers.NewAlertEventHandler(alertEventModel)
-	notifConfigHandler := handlers.NewNotificationConfigHandler(notifConfigModel)
+	notifConfigHandler := handlers.NewNotificationConfigHandler(notifConfigModel, cfg)
+	emailDigestHandler := handlers.NewEmailDigestHandler(emailDigestSvc, notifConfigModel)
 
 	mux := http.NewServeMux()
 	b := cfg.APIBasePath // e.g. "/v1"
@@ -89,6 +95,14 @@ func main() {
 		middleware.Authenticate(http.HandlerFunc(notifConfigHandler.UpdateConfig)))
 	mux.Handle("DELETE "+b+"/notification-config",
 		middleware.Authenticate(http.HandlerFunc(notifConfigHandler.DeleteConfig)))
+	mux.Handle("POST "+b+"/notification-config/test",
+		middleware.Authenticate(http.HandlerFunc(notifConfigHandler.TestChannels)))
+
+	// Authenticated routes — email digest
+	mux.Handle("POST "+b+"/email/setup",
+		middleware.Authenticate(http.HandlerFunc(emailDigestHandler.SetupEmail)))
+	mux.Handle("POST "+b+"/email/digest",
+		middleware.Authenticate(http.HandlerFunc(emailDigestHandler.SendDigest)))
 
 	handler := corsMiddleware(mux)
 
