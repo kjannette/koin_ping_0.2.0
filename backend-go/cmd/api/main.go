@@ -47,6 +47,7 @@ func main() {
 	addressModel := models.NewAddressModel(pool)
 	alertRuleModel := models.NewAlertRuleModel(pool)
 	alertEventModel := models.NewAlertEventModel(pool)
+	checkpointModel := models.NewCheckpointModel(pool)
 	notifConfigModel := models.NewNotificationConfigModel(pool)
 
 	emailDigestSvc := services.NewEmailDigestService(
@@ -58,13 +59,14 @@ func main() {
 	alertEventHandler := handlers.NewAlertEventHandler(alertEventModel)
 	notifConfigHandler := handlers.NewNotificationConfigHandler(notifConfigModel, cfg)
 	emailDigestHandler := handlers.NewEmailDigestHandler(emailDigestSvc, notifConfigModel)
+	statusHandler := handlers.NewStatusHandler(checkpointModel)
 
 	mux := http.NewServeMux()
 	b := cfg.APIBasePath // e.g. "/v1"
 
 	// Public routes
 	mux.HandleFunc("GET "+b+"/health", handlers.HealthCheck)
-	mux.HandleFunc("GET "+b+"/status", handlers.SystemStatus)
+	mux.HandleFunc("GET "+b+"/status", statusHandler.GetStatus)
 
 	// Authenticated routes — addresses
 	mux.Handle("POST "+b+"/addresses",
@@ -73,6 +75,8 @@ func main() {
 		middleware.Authenticate(http.HandlerFunc(addressHandler.List)))
 	mux.Handle("DELETE "+b+"/addresses/{addressId}",
 		middleware.Authenticate(http.HandlerFunc(addressHandler.Remove)))
+	mux.Handle("PATCH "+b+"/addresses/{addressId}",
+		middleware.Authenticate(http.HandlerFunc(addressHandler.UpdateLabel)))
 
 	// Authenticated routes for alert rules
 	mux.Handle("POST "+b+"/addresses/{addressId}/alerts",

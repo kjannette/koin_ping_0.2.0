@@ -2,7 +2,9 @@ package models
 
 import (
 	"context"
+	"errors"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/kjannette/koin-ping/backend-go/internal/domain"
 )
@@ -71,10 +73,15 @@ func (m *AlertEventModel) Create(ctx context.Context, alertRuleID int, message s
 	err := m.pool.QueryRow(ctx,
 		`INSERT INTO alert_events (alert_rule_id, message, address_label, tx_hash)
 		 VALUES ($1, $2, $3, $4)
+		 ON CONFLICT DO NOTHING
 		 RETURNING id, alert_rule_id, message, address_label, tx_hash, timestamp`,
 		alertRuleID, message, addressLabel, txHash,
 	).Scan(&e.ID, &e.AlertRuleID, &e.Message, &e.AddressLabel, &e.TxHash, &e.Timestamp)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			// Duplicate silently skipped by ON CONFLICT DO NOTHING
+			return nil, nil
+		}
 		return nil, err
 	}
 	return &e, nil

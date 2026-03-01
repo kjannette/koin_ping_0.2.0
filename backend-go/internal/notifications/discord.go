@@ -2,6 +2,7 @@ package notifications
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -25,11 +26,15 @@ var discordHTTPClient = &http.Client{ //nolint:gochecknoglobals
 	Timeout: discordHTTPTimeoutSeconds * time.Second,
 }
 
-type AlertMetadata struct {
-	TxHash       string
-	AddressLabel string
-	AlertType    string
-	Address      string
+// DiscordNotifier sends alert notifications via a Discord webhook.
+type DiscordNotifier struct {
+	WebhookURL string
+}
+
+// Send implements Notifier for Discord.
+func (d *DiscordNotifier) Send(_ context.Context, message string, meta AlertMetadata) error {
+	_, err := SendDiscordNotification(d.WebhookURL, message, meta)
+	return err
 }
 
 type discordEmbed struct {

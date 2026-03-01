@@ -2,12 +2,25 @@ package notifications
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"time"
 )
+
+// TelegramNotifier sends alert notifications via Telegram.
+type TelegramNotifier struct {
+	BotToken string
+	ChatID   string
+}
+
+// Send implements Notifier for Telegram.
+func (t *TelegramNotifier) Send(_ context.Context, message string, meta AlertMetadata) error {
+	_, err := SendTelegramNotification(t.BotToken, t.ChatID, message, meta)
+	return err
+}
 
 const telegramHTTPTimeoutSeconds = 10
 

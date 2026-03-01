@@ -62,6 +62,7 @@ func main() {
 		eth, alertRuleModel, alertEventModel, addressModel, notifConfigModel,
 		cfg.ResendAPIKey, cfg.EmailFrom,
 	)
+	digestSvc := services.NewEmailDigestService(cfg.ResendAPIKey, cfg.EmailFrom, alertEventModel, notifConfigModel)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -78,18 +79,23 @@ func main() {
 	}()
 
 	interval := time.Duration(cfg.PollIntervalMS) * time.Millisecond
+	digestInterval := time.Duration(cfg.DigestIntervalHours) * time.Hour
 
 	log.Println(strings.Repeat("=", separatorWidth))
 	log.Println("Koin Ping Observer Poller Starting")
 	log.Println(strings.Repeat("=", separatorWidth))
 	log.Printf("RPC URL: %s", cfg.EthRPCURL)
 	log.Printf("Poll Interval: %dms (%ds)", cfg.PollIntervalMS, cfg.PollIntervalMS/msPerSecond)
+	log.Printf("Digest Interval: %dh", cfg.DigestIntervalHours)
 	log.Println(strings.Repeat("=", separatorWidth))
 
 	runCycle(ctx, observer, evaluator)
 
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
+
+	digestTicker := time.NewTicker(digestInterval)
+	defer digestTicker.Stop()
 
 	for {
 		select {
@@ -99,6 +105,13 @@ func main() {
 			return
 		case <-ticker.C:
 			runCycle(ctx, observer, evaluator)
+		case <-digestTicker.C:
+			sent, digestErr := digestSvc.SendDigestsForAllUsers(ctx)
+			if digestErr != nil {
+				log.Printf("Email digest failed: %v", digestErr)
+			} else {
+				log.Printf("Sent %d email digests", sent)
+			}
 		}
 	}
 }

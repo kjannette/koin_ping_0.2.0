@@ -107,6 +107,24 @@ func (m *AddressModel) FindByID(ctx context.Context, id int, userID *string) (*d
 	return &a, nil
 }
 
+// UpdateLabel updates the label for an address owned by userID.
+// Returns nil, nil if no row matched (address not found or not owned by user).
+func (m *AddressModel) UpdateLabel(ctx context.Context, id int, userID string, label *string) (*domain.Address, error) {
+	var a domain.Address
+	err := m.pool.QueryRow(ctx,
+		`UPDATE addresses SET label = $3 WHERE id = $1 AND user_id = $2
+		 RETURNING id, user_id, address, label, created_at`,
+		id, userID, label,
+	).Scan(&a.ID, &a.UserID, &a.Address, &a.Label, &a.CreatedAt)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &a, nil
+}
+
 func (m *AddressModel) Remove(ctx context.Context, id int, userID string) (bool, error) {
 	tag, err := m.pool.Exec(ctx,
 		`DELETE FROM addresses WHERE id = $1 AND user_id = $2`,

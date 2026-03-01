@@ -92,6 +92,44 @@ func (h *AddressHandler) List(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, addresses)
 }
 
+// UpdateLabel handles PATCH requests to update an address label.
+func (h *AddressHandler) UpdateLabel(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r.Context())
+	addressID, ok := parseIntParam(r.PathValue("addressId"))
+	if !ok {
+		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid address ID")
+
+		return
+	}
+
+	var body struct {
+		Label *string `json:"label"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid request body")
+
+		return
+	}
+
+	log.Printf("User %s updating label for address ID: %d", userID, addressID)
+
+	addr, err := h.addresses.UpdateLabel(r.Context(), addressID, userID, body.Label)
+	if err != nil {
+		log.Printf("Error updating address label: %v", err)
+		writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to update address")
+
+		return
+	}
+
+	if addr == nil {
+		writeError(w, http.StatusNotFound, "NOT_FOUND", "Address not found")
+
+		return
+	}
+
+	writeJSON(w, http.StatusOK, addr)
+}
+
 // Remove handles DELETE requests to remove a tracked address.
 func (h *AddressHandler) Remove(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r.Context())
