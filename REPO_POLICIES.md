@@ -145,13 +145,13 @@ style conventions are in separate documents:
 
 - Database migrations live in `internal/db/migrations/` and must be embedded in
   the binary.
-  - `000_migration.sql` — contains ONLY the creation of the migrations tracking
-    table itself. Nothing else.
-  - `001_schema.sql` — the full application schema.
-  - **Pre-1.0.0:** never add additional migration files (002, 003, etc.). There
-    is no installed base to migrate. Edit `001_schema.sql` directly.
-  - **Post-1.0.0:** add new numbered migration files for each schema change.
-    Never edit existing migrations after release.
+    - `000_migration.sql` — contains ONLY the creation of the migrations
+      tracking table itself. Nothing else.
+    - `001_schema.sql` — the full application schema.
+    - **Pre-1.0.0:** never add additional migration files (002, 003, etc.).
+      There is no installed base to migrate. Edit `001_schema.sql` directly.
+    - **Post-1.0.0:** add new numbered migration files for each schema change.
+      Never edit existing migrations after release.
 
 - All repos should have an `.editorconfig` enforcing the project's indentation
   settings.

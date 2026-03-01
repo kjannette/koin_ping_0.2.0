@@ -37,16 +37,20 @@ cp ENV_TEMPLATE.md .env
 
 ## Firebase Setup
 
-For Firebase Admin SDK to work, you need to set up Application Default Credentials:
+For Firebase Admin SDK to work, you need to set up Application Default
+Credentials:
 
 **Option 1: Use Firebase Project ID (easiest for development)**
+
 - Just set `FIREBASE_PROJECT_ID` in .env
 - Firebase Admin will use Application Default Credentials
 
 **Option 2: Use Service Account Key (production)**
+
 1. Go to Firebase Console > Project Settings > Service Accounts
 2. Click "Generate new private key"
 3. Download the JSON file
 4. Either:
-   - Set `GOOGLE_APPLICATION_CREDENTIALS=/path/to/serviceAccountKey.json` in .env
-   - Or keep it in backend/ and add to .gitignore
+    - Set `GOOGLE_APPLICATION_CREDENTIALS=/path/to/serviceAccountKey.json` in
+      .env
+    - Or keep it in backend/ and add to .gitignore

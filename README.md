@@ -49,10 +49,10 @@ The API listens on `http://localhost:3001` and the frontend on
 
 ## Rationale
 
-Crypto users who hold or actively monitor addresses need a lightweight,
-reliable way to know when on-chain activity occurs without polling block
-explorers manually. Koin Ping fills that gap: it watches a set of Ethereum
-addresses, evaluates configurable alert rules (incoming transactions, outgoing
+Crypto users who hold or actively monitor addresses need a lightweight, reliable
+way to know when on-chain activity occurs without polling block explorers
+manually. Koin Ping fills that gap: it watches a set of Ethereum addresses,
+evaluates configurable alert rules (incoming transactions, outgoing
 transactions, large transfers, balance thresholds), and notifies the user
 through Discord webhooks.
 
@@ -91,9 +91,9 @@ koin_ping_0.2.0/
 authentication middleware. Exposes CRUD endpoints for addresses, alert rules,
 alert events, and notification configuration.
 
-**Poller** (`cmd/poller`): long-running daemon that polls Ethereum via
-JSON-RPC, compares observed transactions against persisted alert rules, fires
-alert events to the database, and dispatches Discord notifications.
+**Poller** (`cmd/poller`): long-running daemon that polls Ethereum via JSON-RPC,
+compares observed transactions against persisted alert rules, fires alert events
+to the database, and dispatches Discord notifications.
 
 **Frontend** (`frontend/`): React 19 SPA built with Vite. Authenticates with
 Firebase, communicates with the API via fetch, and renders the address/alert
@@ -101,17 +101,17 @@ management UI.
 
 ## TODO
 
--   [ ] Switch frontend package manager from npm to yarn (per repo policy)
--   [ ] Rename `go.mod` module path from `github.com/kjannette/koin-ping` to
-        `sneak.berlin/go/koin-ping` (per repo policy)
--   [ ] Move database migrations to `internal/db/migrations/` and embed them
-        in the binary
--   [ ] Pin all Docker base images by `@sha256` in Dockerfile
--   [ ] Install `golangci-lint` locally and pass `make lint`
--   [ ] Add vitest unit tests for the React frontend
--   [ ] Add a `make db-reset` / `make migrate` target for schema management
--   [ ] Set HTTP server read/write timeouts (currently unbounded)
--   [ ] Replace `log.Printf` calls with structured `log/slog`
+- [ ] Switch frontend package manager from npm to yarn (per repo policy)
+- [ ] Rename `go.mod` module path from `github.com/kjannette/koin-ping` to
+      `sneak.berlin/go/koin-ping` (per repo policy)
+- [ ] Move database migrations to `internal/db/migrations/` and embed them in
+      the binary
+- [ ] Pin all Docker base images by `@sha256` in Dockerfile
+- [ ] Install `golangci-lint` locally and pass `make lint`
+- [ ] Add vitest unit tests for the React frontend
+- [ ] Add a `make db-reset` / `make migrate` target for schema management
+- [ ] Set HTTP server read/write timeouts (currently unbounded)
+- [ ] Replace `log.Printf` calls with structured `log/slog`
 
 ## License
 

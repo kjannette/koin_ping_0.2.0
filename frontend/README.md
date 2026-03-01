@@ -5,24 +5,27 @@ React + Vite frontend for the on-chain monitoring and alerting system.
 ## Getting Started
 
 1. Install dependencies:
-   ```bash
-   npm install
-   ```
+
+    ```bash
+    npm install
+    ```
 
 2. Run the development server:
-   ```bash
-   npm run dev
-   ```
+
+    ```bash
+    npm run dev
+    ```
 
 3. Build for production:
-   ```bash
-   npm run build
-   ```
+
+    ```bash
+    npm run build
+    ```
 
 4. Preview production build:
-   ```bash
-   npm run preview
-   ```
+    ```bash
+    npm run preview
+    ```
 
 ## Project Structure
 
@@ -34,5 +37,5 @@ React + Vite frontend for the on-chain monitoring and alerting system.
 
 ## Development
 
-The frontend runs on port 3000 and proxies API requests to the backend running on port 5000.
-
+The frontend runs on port 3000 and proxies API requests to the backend running
+on port 5000.
