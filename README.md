@@ -100,6 +100,52 @@ to the database, and dispatches Discord notifications.
 Firebase, communicates with the API via fetch, and renders the address/alert
 management UI.
 
+## Setting Up Your Alert Platforms
+
+Koin Ping can send real-time alerts to **Telegram**, **Discord**, **Slack**, and **Email**. Each channel is configured per-user through the **Notification Settings** panel on the Alerts page.
+
+Below are step-by-step guides for setting up each platform.
+
+---
+
+### Telegram
+
+To receive alerts via Telegram, you need to create a bot and get your chat ID.
+
+#### 1. Create a Telegram Bot
+
+1. Open Telegram and search for **@BotFather** (look for the blue verified checkmark).
+2. Open the conversation with BotFather and send: `/newbot`
+3. BotFather will ask for a **display name** — enter something like `Koin Ping Alerts`.
+4. BotFather will ask for a **username** — it must end in `bot`, e.g. `MyKoinPingBot`.
+5. BotFather will reply with your **Bot Token** — a string that looks like `123456789:ABCdefGHIjklMNOpqrSTUvwxYZ`. Copy it.
+
+#### 2. Get Your Chat ID
+
+1. In Telegram, search for the bot username you just created and open the chat.
+2. Tap **Start** or send any message (e.g. `hello`).
+3. Open the following URL in your browser, replacing `YOUR_BOT_TOKEN` with the token from step 1:
+
+   ```
+   https://api.telegram.org/botYOUR_BOT_TOKEN/getUpdates
+   ```
+
+4. In the JSON response, find the `"chat"` object — the `"id"` field is your **Chat ID** (a numeric value).
+
+   > **Tip:** If the `"result"` array is empty, make sure you sent a message to your bot first, then refresh the page.
+
+#### 3. Save in Koin Ping
+
+1. Go to the **Alerts** page in Koin Ping.
+2. In the **Notification Settings** panel, find the **Telegram** section.
+3. Paste your **Bot Token** and **Chat ID** into the corresponding fields.
+4. Click **Save Settings**.
+5. Click **Test All Channels** to verify — you should receive a test message from your bot in Telegram.
+
+---
+
+*Guides for Discord, Slack, and Email coming soon.*
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
