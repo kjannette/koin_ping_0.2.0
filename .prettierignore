@@ -4,3 +4,4 @@ frontend/build/
 backend-go/bin/
 *.lock
 Prompts/
+.claude/
