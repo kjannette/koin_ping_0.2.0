@@ -1,9 +1,8 @@
 # Koin Ping
+A lightweight on-chain monitoring and alerting system designed to give users situational awareness over blockchain addresses they care about.
 
-Koin Ping is an MIT-licensed blockchain monitoring system by Steven Jannette
-that polls Ethereum addresses for on-chain activity and delivers real-time
-alerts to users via a Go REST API backend and a React single-page application
-frontend.
+# Overview
+Koin Ping observes on-chain activity and notifies users when predefined conditions are met. It does not execute transactions, manage wallets, or speculate on prices.
 
 ## Getting Started
 
