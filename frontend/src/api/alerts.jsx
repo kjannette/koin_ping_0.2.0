@@ -1,16 +1,16 @@
 // API client for alert rule management
 
-import { getAuthHeaders, getAuthHeadersSimple } from './authHeaders';
-import { API_BASE } from './config';
+import { getAuthHeaders, getAuthHeadersSimple } from "./authHeaders";
+import { API_BASE } from "./config";
 
 /**
  * Alert types supported by the system
  */
 export const ALERT_TYPES = {
-  INCOMING_TX: 'incoming_tx',
-  OUTGOING_TX: 'outgoing_tx',
-  LARGE_TRANSFER: 'large_transfer',
-  BALANCE_BELOW: 'balance_below'
+    INCOMING_TX: "incoming_tx",
+    OUTGOING_TX: "outgoing_tx",
+    LARGE_TRANSFER: "large_transfer",
+    BALANCE_BELOW: "balance_below",
 };
 
 /**
@@ -22,32 +22,37 @@ export const ALERT_TYPES = {
  * @returns {Promise<Object>} Created alert rule
  */
 export async function createAlert(addressId, data) {
-  try {
-  const headers = await getAuthHeaders();
-  const response = await fetch(`${API_BASE}/addresses/${addressId}/alerts`, {
-    method: 'POST',
-    headers: headers,
-    body: JSON.stringify(data)
-  });
-  
-  if (!response.ok) {
-      let errorMessage = 'Failed to create alert rule';
-      try {
-    const error = await response.json();
-        errorMessage = error.message || errorMessage;
-      } catch {
-        errorMessage = `Server error: ${response.status} ${response.statusText}`;
-      }
-      throw new Error(errorMessage);
-  }
-  
-  return response.json();
-  } catch (error) {
-    if (error.message.includes('fetch')) {
-      throw new Error('Cannot connect to server. Is the backend running?');
+    try {
+        const headers = await getAuthHeaders();
+        const response = await fetch(
+            `${API_BASE}/addresses/${addressId}/alerts`,
+            {
+                method: "POST",
+                headers: headers,
+                body: JSON.stringify(data),
+            },
+        );
+
+        if (!response.ok) {
+            let errorMessage = "Failed to create alert rule";
+            try {
+                const error = await response.json();
+                errorMessage = error.message || errorMessage;
+            } catch {
+                errorMessage = `Server error: ${response.status} ${response.statusText}`;
+            }
+            throw new Error(errorMessage);
+        }
+
+        return response.json();
+    } catch (error) {
+        if (error.message.includes("fetch")) {
+            throw new Error(
+                "Cannot connect to server. Is the backend running?",
+            );
+        }
+        throw error;
     }
-    throw error;
-  }
 }
 
 /**
@@ -56,30 +61,35 @@ export async function createAlert(addressId, data) {
  * @returns {Promise<Array>} List of alert rules
  */
 export async function getAlerts(addressId) {
-  try {
-  const headers = await getAuthHeadersSimple();
-  const response = await fetch(`${API_BASE}/addresses/${addressId}/alerts`, {
-    headers: headers
-  });
-  
-  if (!response.ok) {
-      let errorMessage = 'Failed to fetch alert rules';
-      try {
-    const error = await response.json();
-        errorMessage = error.message || errorMessage;
-      } catch {
-        errorMessage = `Server error: ${response.status} ${response.statusText}`;
-      }
-      throw new Error(errorMessage);
-  }
-  
-  return response.json();
-  } catch (error) {
-    if (error.message.includes('fetch')) {
-      throw new Error('Cannot connect to server. Is the backend running?');
+    try {
+        const headers = await getAuthHeadersSimple();
+        const response = await fetch(
+            `${API_BASE}/addresses/${addressId}/alerts`,
+            {
+                headers: headers,
+            },
+        );
+
+        if (!response.ok) {
+            let errorMessage = "Failed to fetch alert rules";
+            try {
+                const error = await response.json();
+                errorMessage = error.message || errorMessage;
+            } catch {
+                errorMessage = `Server error: ${response.status} ${response.statusText}`;
+            }
+            throw new Error(errorMessage);
+        }
+
+        return response.json();
+    } catch (error) {
+        if (error.message.includes("fetch")) {
+            throw new Error(
+                "Cannot connect to server. Is the backend running?",
+            );
+        }
+        throw error;
     }
-    throw error;
-  }
 }
 
 /**
@@ -89,32 +99,34 @@ export async function getAlerts(addressId) {
  * @returns {Promise<Object>} Updated alert rule
  */
 export async function updateAlertStatus(alertId, enabled) {
-  try {
-  const headers = await getAuthHeaders();
-  const response = await fetch(`${API_BASE}/alerts/${alertId}`, {
-    method: 'PATCH',
-    headers: headers,
-    body: JSON.stringify({ enabled })
-  });
-  
-  if (!response.ok) {
-      let errorMessage = 'Failed to update alert rule';
-      try {
-    const error = await response.json();
-        errorMessage = error.message || errorMessage;
-      } catch {
-        errorMessage = `Server error: ${response.status} ${response.statusText}`;
-      }
-      throw new Error(errorMessage);
-  }
-  
-  return response.json();
-  } catch (error) {
-    if (error.message.includes('fetch')) {
-      throw new Error('Cannot connect to server. Is the backend running?');
+    try {
+        const headers = await getAuthHeaders();
+        const response = await fetch(`${API_BASE}/alerts/${alertId}`, {
+            method: "PATCH",
+            headers: headers,
+            body: JSON.stringify({ enabled }),
+        });
+
+        if (!response.ok) {
+            let errorMessage = "Failed to update alert rule";
+            try {
+                const error = await response.json();
+                errorMessage = error.message || errorMessage;
+            } catch {
+                errorMessage = `Server error: ${response.status} ${response.statusText}`;
+            }
+            throw new Error(errorMessage);
+        }
+
+        return response.json();
+    } catch (error) {
+        if (error.message.includes("fetch")) {
+            throw new Error(
+                "Cannot connect to server. Is the backend running?",
+            );
+        }
+        throw error;
     }
-    throw error;
-  }
 }
 
 /**
@@ -123,27 +135,29 @@ export async function updateAlertStatus(alertId, enabled) {
  * @returns {Promise<void>}
  */
 export async function deleteAlert(alertId) {
-  try {
-  const headers = await getAuthHeadersSimple();
-  const response = await fetch(`${API_BASE}/alerts/${alertId}`, {
-    method: 'DELETE',
-    headers: headers
-  });
-  
-  if (!response.ok && response.status !== 204) {
-      let errorMessage = 'Failed to delete alert rule';
-      try {
-    const error = await response.json();
-        errorMessage = error.message || errorMessage;
-      } catch {
-        errorMessage = `Server error: ${response.status} ${response.statusText}`;
-      }
-      throw new Error(errorMessage);
+    try {
+        const headers = await getAuthHeadersSimple();
+        const response = await fetch(`${API_BASE}/alerts/${alertId}`, {
+            method: "DELETE",
+            headers: headers,
+        });
+
+        if (!response.ok && response.status !== 204) {
+            let errorMessage = "Failed to delete alert rule";
+            try {
+                const error = await response.json();
+                errorMessage = error.message || errorMessage;
+            } catch {
+                errorMessage = `Server error: ${response.status} ${response.statusText}`;
+            }
+            throw new Error(errorMessage);
+        }
+    } catch (error) {
+        if (error.message.includes("fetch")) {
+            throw new Error(
+                "Cannot connect to server. Is the backend running?",
+            );
+        }
+        throw error;
     }
-  } catch (error) {
-    if (error.message.includes('fetch')) {
-      throw new Error('Cannot connect to server. Is the backend running?');
-    }
-    throw error;
-  }
 }
