@@ -24,18 +24,18 @@ type Config struct {
 
 func Load() (*Config, error) {
 	cfg := &Config{
-		Port:           getEnvInt("PORT", 3001),
-		APIBasePath:    getEnv("API_BASE_PATH", "/v1"),
-		DatabaseURL:    os.Getenv("DATABASE_URL"),
-		DBHost:         getEnv("DB_HOST", "localhost"),
-		DBPort:         getEnvInt("DB_PORT", 5432),
-		DBUser:         os.Getenv("DB_USER"),
-		DBPassword:     os.Getenv("DB_PASSWORD"),
-		DBName:         os.Getenv("DB_NAME"),
+		Port:              getEnvInt("PORT", 3001),
+		APIBasePath:       getEnv("API_BASE_PATH", "/v1"),
+		DatabaseURL:       os.Getenv("DATABASE_URL"),
+		DBHost:            getEnv("DB_HOST", "localhost"),
+		DBPort:            getEnvInt("DB_PORT", 5432),
+		DBUser:            os.Getenv("DB_USER"),
+		DBPassword:        os.Getenv("DB_PASSWORD"),
+		DBName:            os.Getenv("DB_NAME"),
 		FirebaseProjectID: os.Getenv("FIREBASE_PROJECT_ID"),
-		EthRPCURL:      os.Getenv("ETH_RPC_URL"),
-		PollIntervalMS: getEnvInt("POLL_INTERVAL_MS", 60000),
-		NodeEnv:        getEnv("NODE_ENV", "development"),
+		EthRPCURL:         os.Getenv("ETH_RPC_URL"),
+		PollIntervalMS:    getEnvInt("POLL_INTERVAL_MS", 60000),
+		NodeEnv:           getEnv("NODE_ENV", "development"),
 	}
 
 	if cfg.PollIntervalMS < 1000 {

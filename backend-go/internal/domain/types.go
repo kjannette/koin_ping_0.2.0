@@ -59,12 +59,12 @@ type AlertRule struct {
 }
 
 type AlertEvent struct {
-	ID          int       `json:"id"`
-	AlertRuleID int       `json:"alert_rule_id"`
-	Message     string    `json:"message"`
-	AddressLabel *string  `json:"address_label"`
-	TxHash      *string   `json:"tx_hash"`
-	Timestamp   time.Time `json:"timestamp"`
+	ID           int       `json:"id"`
+	AlertRuleID  int       `json:"alert_rule_id"`
+	Message      string    `json:"message"`
+	AddressLabel *string   `json:"address_label"`
+	TxHash       *string   `json:"tx_hash"`
+	Timestamp    time.Time `json:"timestamp"`
 }
 
 type AddressCheckpoint struct {
@@ -82,23 +82,23 @@ type CheckpointDetail struct {
 }
 
 type NotificationConfig struct {
-	UserID              string  `json:"user_id"`
-	DiscordWebhookURL   *string `json:"discord_webhook_url"`
-	TelegramChatID      *string `json:"telegram_chat_id"`
-	TelegramBotToken    *string `json:"telegram_bot_token,omitempty"`
-	Email               *string `json:"email"`
-	NotificationEnabled bool    `json:"notification_enabled"`
+	UserID              string     `json:"user_id"`
+	DiscordWebhookURL   *string    `json:"discord_webhook_url"`
+	TelegramChatID      *string    `json:"telegram_chat_id"`
+	TelegramBotToken    *string    `json:"telegram_bot_token,omitempty"`
+	Email               *string    `json:"email"`
+	NotificationEnabled bool       `json:"notification_enabled"`
 	CreatedAt           *time.Time `json:"created_at,omitempty"`
 	UpdatedAt           *time.Time `json:"updated_at,omitempty"`
 }
 
 type NormalizedTx struct {
-	Hash           string `json:"hash"`
-	From           string `json:"from"`
+	Hash           string  `json:"hash"`
+	From           string  `json:"from"`
 	To             *string `json:"to"`
-	Value          string `json:"value"` // Wei as string for precision
-	BlockNumber    int    `json:"block_number"`
-	BlockTimestamp int64  `json:"block_timestamp"`
+	Value          string  `json:"value"` // Wei as string for precision
+	BlockNumber    int     `json:"block_number"`
+	BlockTimestamp int64   `json:"block_timestamp"`
 }
 
 type Direction string
