@@ -1,0 +1,6 @@
+node_modules/
+frontend/dist/
+frontend/build/
+backend-go/bin/
+*.lock
+Prompts/
