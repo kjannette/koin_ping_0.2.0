@@ -2,7 +2,9 @@
 A lightweight on-chain monitoring and alerting system designed to give users situational awareness over blockchain addresses they care about.
 
 # Overview
+
 Koin Ping observes on-chain activity and notifies users when predefined conditions are met. It does not execute transactions, manage wallets, or speculate on prices.
+
 
 ## Getting Started
 
