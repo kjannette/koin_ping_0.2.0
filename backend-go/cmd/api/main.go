@@ -18,9 +18,9 @@ import (
 )
 
 const (
-	// serverReadTimeoutSeconds is the maximum duration to read a request.
+	// max duration to read a request.
 	serverReadTimeoutSeconds = 5
-	// serverWriteTimeoutSeconds is the maximum duration to write a response.
+	// maxiduration to write a response.
 	serverWriteTimeoutSeconds = 10
 )
 
@@ -74,7 +74,7 @@ func main() {
 	mux.Handle("DELETE "+b+"/addresses/{addressId}",
 		middleware.Authenticate(http.HandlerFunc(addressHandler.Remove)))
 
-	// Authenticated routes — alert rules
+	// Authenticated routes for alert rules
 	mux.Handle("POST "+b+"/addresses/{addressId}/alerts",
 		middleware.Authenticate(http.HandlerFunc(alertRuleHandler.Create)))
 	mux.Handle("GET "+b+"/addresses/{addressId}/alerts",

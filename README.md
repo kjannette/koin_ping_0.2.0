@@ -99,20 +99,6 @@ to the database, and dispatches Discord notifications.
 Firebase, communicates with the API via fetch, and renders the address/alert
 management UI.
 
-## TODO
-
-- [ ] Switch frontend package manager from npm to yarn (per repo policy)
-- [ ] Rename `go.mod` module path from `github.com/kjannette/koin-ping` to
-      `sneak.berlin/go/koin-ping` (per repo policy)
-- [ ] Move database migrations to `internal/db/migrations/` and embed them in
-      the binary
-- [ ] Pin all Docker base images by `@sha256` in Dockerfile
-- [ ] Install `golangci-lint` locally and pass `make lint`
-- [ ] Add vitest unit tests for the React frontend
-- [ ] Add a `make db-reset` / `make migrate` target for schema management
-- [ ] Set HTTP server read/write timeouts (currently unbounded)
-- [ ] Replace `log.Printf` calls with structured `log/slog`
-
 ## License
 
 MIT. See [LICENSE](LICENSE).
