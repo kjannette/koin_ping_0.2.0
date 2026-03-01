@@ -101,7 +101,7 @@ export default function Signup() {
                             width: "100%",
                             padding: "0.5rem",
                             fontSize: "1rem",
-                            backgroundColor: "#1a1a1a",
+                            backgroundColor: "#242424",
                             border: "1px solid #444",
                             borderRadius: "4px",
                             color: "white",
@@ -123,7 +123,7 @@ export default function Signup() {
                             width: "100%",
                             padding: "0.5rem",
                             fontSize: "1rem",
-                            backgroundColor: "#1a1a1a",
+                            backgroundColor: "#242424",
                             border: "1px solid #444",
                             borderRadius: "4px",
                             color: "white",
@@ -145,7 +145,7 @@ export default function Signup() {
                             width: "100%",
                             padding: "0.5rem",
                             fontSize: "1rem",
-                            backgroundColor: "#1a1a1a",
+                            backgroundColor: "#242424",
                             border: "1px solid #444",
                             borderRadius: "4px",
                             color: "white",
@@ -173,7 +173,7 @@ export default function Signup() {
             </form>
 
             <div style={{ marginTop: "1.5rem", textAlign: "center" }}>
-                <p style={{ color: "#999" }}>
+                <p style={{ color: "#b3b3b3" }}>
                     Already have an account?{" "}
                     <Link
                         to="/login"

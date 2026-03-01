@@ -51,7 +51,7 @@ export default function Addresses() {
                 {loading && <p>Loading addresses...</p>}
                 {error && <p style={{ color: "red" }}>Error: {error}</p>}
                 {!loading && !error && addresses.length === 0 && (
-                    <p style={{ color: "#666" }}>
+                    <p style={{ color: "#808080" }}>
                         No addresses tracked yet. Add one above to get started.
                     </p>
                 )}
@@ -63,8 +63,9 @@ export default function Addresses() {
                                 style={{
                                     padding: "1rem",
                                     marginBottom: "0.5rem",
-                                    border: "1px solid #ddd",
+                                    border: "1px solid #444",
                                     borderRadius: "4px",
+                                    backgroundColor: "#333",
                                 }}
                             >
                                 <div
@@ -78,7 +79,8 @@ export default function Addresses() {
                                 <div
                                     style={{
                                         fontFamily: "monospace",
-                                        fontSize: "0.9rem",
+                                        fontSize: "1.035rem",
+                                        color: "#b3b3b3",
                                     }}
                                 >
                                     {addr.address}
