@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"log"
 	"math/big"
 	"net/http"
 	"strings"
@@ -13,7 +15,11 @@ import (
 	"github.com/kjannette/koin-ping/backend-go/internal/domain"
 )
 
-const rpcTimeoutMS = 30000
+const (
+	rpcTimeoutMS    = 30000
+	rpcMaxRetries   = 3
+	rpcRetryBaseMS  = 1000
+)
 
 type JsonRpcEthereum struct {
 	rpcURL string
@@ -66,6 +72,44 @@ func (j *JsonRpcEthereum) callRPC(ctx context.Context, method string, params ...
 		return nil, fmt.Errorf("marshal RPC request: %w", err)
 	}
 
+	return j.callWithRetry(ctx, method, body)
+}
+
+// callWithRetry executes a JSON-RPC POST with exponential backoff on transient errors.
+// It retries on network errors, HTTP 429, and HTTP 5xx. It does NOT retry on RPC-level
+// errors or other 4xx responses (those are permanent failures).
+func (j *JsonRpcEthereum) callWithRetry(ctx context.Context, method string, body []byte) (json.RawMessage, error) {
+	var lastErr error
+	for attempt := range rpcMaxRetries {
+		if attempt > 0 {
+			wait := time.Duration(rpcRetryBaseMS*(1<<(attempt-1))) * time.Millisecond
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(wait):
+			}
+			log.Printf("Retrying RPC call [%s] (attempt %d/%d)", method, attempt+1, rpcMaxRetries)
+		}
+
+		result, err := j.doRPCCall(ctx, method, body)
+		if err == nil {
+			return result, nil
+		}
+
+		lastErr = err
+
+		// Permanent errors: do not retry
+		if isPermanentRPCError(err) {
+			return nil, err
+		}
+
+		log.Printf("Transient RPC error [%s] (attempt %d/%d): %v", method, attempt+1, rpcMaxRetries, err)
+	}
+
+	return nil, lastErr
+}
+
+func (j *JsonRpcEthereum) doRPCCall(ctx context.Context, method string, body []byte) (json.RawMessage, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, j.rpcURL, bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("create RPC request: %w", err)
@@ -78,8 +122,13 @@ func (j *JsonRpcEthereum) callRPC(ctx context.Context, method string, params ...
 	}
 	defer resp.Body.Close()
 
+	// 429 and 5xx are transient; other non-200 are permanent.
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("HTTP %d: %s for %s", resp.StatusCode, resp.Status, method)
+		err := fmt.Errorf("HTTP %d: %s for %s", resp.StatusCode, resp.Status, method)
+		if resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode >= 500 { //nolint:mnd
+			return nil, err // transient — will be retried
+		}
+		return nil, &permanentRPCError{err}
 	}
 
 	var rpcResp rpcResponse
@@ -88,10 +137,23 @@ func (j *JsonRpcEthereum) callRPC(ctx context.Context, method string, params ...
 	}
 
 	if rpcResp.Error != nil {
-		return nil, fmt.Errorf("RPC Error [%s]: %s (code: %d)", method, rpcResp.Error.Message, rpcResp.Error.Code)
+		// RPC-level errors are permanent (bad params, unsupported method, etc.)
+		return nil, &permanentRPCError{
+			fmt.Errorf("RPC Error [%s]: %s (code: %d)", method, rpcResp.Error.Message, rpcResp.Error.Code),
+		}
 	}
 
 	return rpcResp.Result, nil
+}
+
+type permanentRPCError struct{ cause error }
+
+func (e *permanentRPCError) Error() string { return e.cause.Error() }
+func (e *permanentRPCError) Unwrap() error { return e.cause }
+
+func isPermanentRPCError(err error) bool {
+	var p *permanentRPCError
+	return errors.As(err, &p)
 }
 
 func (j *JsonRpcEthereum) GetLatestBlockNumber(ctx context.Context) (int, error) {

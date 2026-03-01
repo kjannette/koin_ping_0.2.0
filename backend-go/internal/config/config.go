@@ -13,6 +13,7 @@ const (
 	defaultDBPort = 5432
 	defaultPollIntervalMS = 60000
 	minPollIntervalMS = 1000
+	defaultDigestIntervalHours = 24
 )
 
 type Config struct {
@@ -28,8 +29,9 @@ type Config struct {
 	EthRPCURL         string
 	PollIntervalMS    int
 	NodeEnv           string
-	ResendAPIKey      string
-	EmailFrom         string
+	ResendAPIKey         string
+	EmailFrom            string
+	DigestIntervalHours  int
 }
 
 // Load reads configuration from environment variables and returns a Config.
@@ -47,8 +49,9 @@ func Load() (*Config, error) {
 		EthRPCURL:         os.Getenv("ETH_RPC_URL"),
 		PollIntervalMS:    getEnvInt("POLL_INTERVAL_MS", defaultPollIntervalMS),
 		NodeEnv:           getEnv("NODE_ENV", "development"),
-		ResendAPIKey:      os.Getenv("RESEND_API_KEY"),
-		EmailFrom:         getEnv("EMAIL_FROM", "Koin Ping <alerts@koinping.com>"),
+		ResendAPIKey:        os.Getenv("RESEND_API_KEY"),
+		EmailFrom:           getEnv("EMAIL_FROM", "Koin Ping <alerts@koinping.com>"),
+		DigestIntervalHours: getEnvInt("DIGEST_INTERVAL_HOURS", defaultDigestIntervalHours),
 	}
 
 	if cfg.PollIntervalMS < minPollIntervalMS {

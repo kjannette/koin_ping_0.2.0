@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -15,6 +16,20 @@ type CheckpointModel struct {
 
 func NewCheckpointModel(pool *pgxpool.Pool) *CheckpointModel {
 	return &CheckpointModel{pool: pool}
+}
+
+// GetLatestBlock returns the highest last_checked_block and its timestamp across all addresses.
+// Returns nil, nil, nil when no checkpoints exist yet.
+func (m *CheckpointModel) GetLatestBlock(ctx context.Context) (*int, *time.Time, error) {
+	var block *int
+	var checkedAt *time.Time
+	err := m.pool.QueryRow(ctx,
+		`SELECT MAX(last_checked_block), MAX(last_checked_at) FROM address_checkpoints`,
+	).Scan(&block, &checkedAt)
+	if err != nil {
+		return nil, nil, err
+	}
+	return block, checkedAt, nil
 }
 
 // GetLastCheckedBlock returns the last checked block for an address, or -1 if never checked.

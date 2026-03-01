@@ -4,12 +4,19 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/kjannette/koin-ping/backend-go/internal/domain"
 	"github.com/kjannette/koin-ping/backend-go/internal/models"
 	"github.com/kjannette/koin-ping/backend-go/internal/notifications"
 	"github.com/kjannette/koin-ping/backend-go/internal/protocols/ethereum"
 	"github.com/kjannette/koin-ping/backend-go/internal/wei"
+)
+
+const (
+	notificationTimeout    = 30 * time.Second
+	notificationMaxRetries = 3
+	notificationRetryBase  = time.Second
 )
 
 type EvaluatorService struct {
@@ -167,23 +174,83 @@ func (s *EvaluatorService) fireAlert(ctx context.Context, rule domain.AlertRule,
 	message := s.buildMessage(rule, obs)
 	txHash := &obs.Hash
 
-	_, err = s.alertEvents.Create(ctx, rule.ID, message, &addressLabel, txHash)
+	event, err := s.alertEvents.Create(ctx, rule.ID, message, &addressLabel, txHash)
 	if err != nil {
 		return err
 	}
 
+	if event == nil {
+		log.Printf("[ALERT DEDUP] Rule %d (%s) - duplicate event skipped for TX: %s", rule.ID, rule.Type, obs.Hash)
+		return nil
+	}
+
 	log.Printf("[ALERT FIRED] Rule %d (%s) - %s - TX: %s", rule.ID, rule.Type, message, obs.Hash)
 
-	// Send Discord notification (non-fatal on failure)
 	if addr != nil {
+		userID := addr.UserID
+		address := addr.Address
 		go func() {
-			s.sendNotification(
-				ctx, addr.UserID, message, obs, addressLabel, rule, addr.Address,
-			)
+			notifCtx, cancel := context.WithTimeout(context.Background(), notificationTimeout)
+			defer cancel()
+			s.sendNotification(notifCtx, userID, message, obs, addressLabel, rule, address)
 		}()
 	}
 
 	return nil
+}
+
+func (s *EvaluatorService) buildNotifiers(cfg *domain.NotificationConfig) []notifications.Notifier {
+	var notifiers []notifications.Notifier
+
+	if cfg.DiscordWebhookURL != nil && *cfg.DiscordWebhookURL != "" {
+		notifiers = append(notifiers, &notifications.DiscordNotifier{WebhookURL: *cfg.DiscordWebhookURL})
+	}
+
+	if cfg.TelegramBotToken != nil && *cfg.TelegramBotToken != "" &&
+		cfg.TelegramChatID != nil && *cfg.TelegramChatID != "" {
+		notifiers = append(notifiers, &notifications.TelegramNotifier{
+			BotToken: *cfg.TelegramBotToken,
+			ChatID:   *cfg.TelegramChatID,
+		})
+	}
+
+	if cfg.SlackWebhookURL != nil && *cfg.SlackWebhookURL != "" {
+		notifiers = append(notifiers, &notifications.SlackNotifier{WebhookURL: *cfg.SlackWebhookURL})
+	}
+
+	if cfg.Email != nil && *cfg.Email != "" {
+		notifiers = append(notifiers, &notifications.EmailNotifier{
+			APIKey: s.resendAPIKey,
+			From:   s.emailFrom,
+			To:     *cfg.Email,
+		})
+	}
+
+	return notifiers
+}
+
+func sendWithRetry(ctx context.Context, n notifications.Notifier, message string, meta notifications.AlertMetadata) error {
+	var lastErr error
+	for attempt := range notificationMaxRetries {
+		if attempt > 0 {
+			wait := notificationRetryBase * time.Duration(1<<(attempt-1))
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(wait):
+			}
+		}
+
+		if err := n.Send(ctx, message, meta); err != nil {
+			log.Printf("Notification attempt %d/%d failed: %v", attempt+1, notificationMaxRetries, err)
+			lastErr = err
+			continue
+		}
+
+		return nil
+	}
+
+	return lastErr
 }
 
 func (s *EvaluatorService) sendNotification(ctx context.Context, userID, message string, obs domain.ObservedTx, addressLabel string, rule domain.AlertRule, address string) {
@@ -204,44 +271,11 @@ func (s *EvaluatorService) sendNotification(ctx context.Context, userID, message
 		Address:      address,
 	}
 
-	if notifConfig.DiscordWebhookURL != nil && *notifConfig.DiscordWebhookURL != "" {
-		sent, sendErr := notifications.SendDiscordNotification(*notifConfig.DiscordWebhookURL, message, meta)
-		if sendErr != nil || !sent {
-			log.Printf("Discord notification failed for user %s: %v", userID, sendErr)
+	for _, n := range s.buildNotifiers(notifConfig) {
+		if err := sendWithRetry(ctx, n, message, meta); err != nil {
+			log.Printf("Notification channel failed for user %s after retries: %v", userID, err)
 		} else {
-			log.Printf("Discord notification sent to user %s", userID)
-		}
-	}
-
-	if notifConfig.TelegramBotToken != nil && *notifConfig.TelegramBotToken != "" &&
-		notifConfig.TelegramChatID != nil && *notifConfig.TelegramChatID != "" {
-		sent, sendErr := notifications.SendTelegramNotification(
-			*notifConfig.TelegramBotToken, *notifConfig.TelegramChatID, message, meta,
-		)
-		if sendErr != nil || !sent {
-			log.Printf("Telegram notification failed for user %s: %v", userID, sendErr)
-		} else {
-			log.Printf("Telegram notification sent to user %s", userID)
-		}
-	}
-
-	if notifConfig.SlackWebhookURL != nil && *notifConfig.SlackWebhookURL != "" {
-		sent, sendErr := notifications.SendSlackNotification(*notifConfig.SlackWebhookURL, message, meta)
-		if sendErr != nil || !sent {
-			log.Printf("Slack notification failed for user %s: %v", userID, sendErr)
-		} else {
-			log.Printf("Slack notification sent to user %s", userID)
-		}
-	}
-
-	if notifConfig.Email != nil && *notifConfig.Email != "" {
-		sent, sendErr := notifications.SendEmailNotification(
-			s.resendAPIKey, s.emailFrom, *notifConfig.Email, message, meta,
-		)
-		if sendErr != nil || !sent {
-			log.Printf("Email notification failed for user %s: %v", userID, sendErr)
-		} else {
-			log.Printf("Email notification sent to user %s", userID)
+			log.Printf("Notification sent to user %s via %T", userID, n)
 		}
 	}
 }

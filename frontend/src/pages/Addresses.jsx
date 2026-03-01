@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import AddressForm from "../components/AddressForm";
-import { getAddresses, createAddress } from "../api/addresses";
+import { getAddresses, createAddress, deleteAddress, updateAddress } from "../api/addresses";
 
 export default function Addresses() {
     const [addresses, setAddresses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [editingId, setEditingId] = useState(null);
+    const [editLabel, setEditLabel] = useState("");
 
     // Load addresses on mount
     useEffect(() => {
@@ -29,13 +31,50 @@ export default function Addresses() {
     async function handleAddressSubmit(data) {
         try {
             const newAddress = await createAddress(data);
-            // Append new address to state
             setAddresses((prev) => [...prev, newAddress]);
-            setError(null); // Clear any previous errors
+            setError(null);
         } catch (err) {
             setError(err.message);
             console.error("Failed to create address:", err);
         }
+    }
+
+    async function handleDelete(id, label) {
+        const displayName = label || "this address";
+        if (!window.confirm(`Remove "${displayName}"? This will also delete all associated alert rules.`)) {
+            return;
+        }
+        try {
+            await deleteAddress(id);
+            setAddresses((prev) => prev.filter((a) => a.id !== id));
+            setError(null);
+        } catch (err) {
+            setError(err.message);
+            console.error("Failed to delete address:", err);
+        }
+    }
+
+    function handleEditStart(addr) {
+        setEditingId(addr.id);
+        setEditLabel(addr.label ?? "");
+    }
+
+    async function handleEditSave(id) {
+        try {
+            const updated = await updateAddress(id, { label: editLabel || null });
+            setAddresses((prev) => prev.map((a) => (a.id === id ? updated : a)));
+            setEditingId(null);
+            setEditLabel("");
+            setError(null);
+        } catch (err) {
+            setError(err.message);
+            console.error("Failed to update address:", err);
+        }
+    }
+
+    function handleEditCancel() {
+        setEditingId(null);
+        setEditLabel("");
     }
 
     return (
@@ -68,22 +107,88 @@ export default function Addresses() {
                                     backgroundColor: "#333",
                                 }}
                             >
-                                <div
-                                    style={{
-                                        fontWeight: "bold",
-                                        marginBottom: "0.25rem",
-                                    }}
-                                >
-                                    {addr.label || "Unlabeled"}
-                                </div>
-                                <div
-                                    style={{
-                                        fontFamily: "monospace",
-                                        fontSize: "1.035rem",
-                                        color: "#b3b3b3",
-                                    }}
-                                >
-                                    {addr.address}
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                    <div style={{ flex: 1 }}>
+                                        {editingId === addr.id ? (
+                                            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginBottom: "0.25rem" }}>
+                                                <input
+                                                    value={editLabel}
+                                                    onChange={(e) => setEditLabel(e.target.value)}
+                                                    placeholder="Label (optional)"
+                                                    style={{
+                                                        background: "#444",
+                                                        border: "1px solid #666",
+                                                        borderRadius: "3px",
+                                                        color: "#fff",
+                                                        padding: "0.25rem 0.5rem",
+                                                        fontSize: "0.9rem",
+                                                    }}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === "Enter") handleEditSave(addr.id);
+                                                        if (e.key === "Escape") handleEditCancel();
+                                                    }}
+                                                    autoFocus
+                                                />
+                                                <button
+                                                    onClick={() => handleEditSave(addr.id)}
+                                                    style={{ cursor: "pointer", padding: "0.25rem 0.6rem", fontSize: "0.85rem" }}
+                                                >
+                                                    Save
+                                                </button>
+                                                <button
+                                                    onClick={handleEditCancel}
+                                                    style={{ cursor: "pointer", padding: "0.25rem 0.6rem", fontSize: "0.85rem", background: "transparent", color: "#aaa", border: "1px solid #555" }}
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
+                                                <span style={{ fontWeight: "bold" }}>
+                                                    {addr.label || "Unlabeled"}
+                                                </span>
+                                                <button
+                                                    onClick={() => handleEditStart(addr)}
+                                                    style={{
+                                                        cursor: "pointer",
+                                                        background: "transparent",
+                                                        border: "none",
+                                                        color: "#6699cc",
+                                                        fontSize: "0.8rem",
+                                                        padding: "0",
+                                                        textDecoration: "underline",
+                                                    }}
+                                                >
+                                                    Edit
+                                                </button>
+                                            </div>
+                                        )}
+                                        <div
+                                            style={{
+                                                fontFamily: "monospace",
+                                                fontSize: "1.035rem",
+                                                color: "#b3b3b3",
+                                            }}
+                                        >
+                                            {addr.address}
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => handleDelete(addr.id, addr.label)}
+                                        style={{
+                                            cursor: "pointer",
+                                            background: "transparent",
+                                            border: "1px solid #884444",
+                                            color: "#cc6666",
+                                            borderRadius: "3px",
+                                            padding: "0.3rem 0.7rem",
+                                            fontSize: "0.85rem",
+                                            marginLeft: "1rem",
+                                            flexShrink: 0,
+                                        }}
+                                    >
+                                        Remove
+                                    </button>
                                 </div>
                             </li>
                         ))}

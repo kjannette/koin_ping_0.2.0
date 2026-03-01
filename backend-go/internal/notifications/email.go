@@ -2,12 +2,26 @@ package notifications
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"time"
 )
+
+// EmailNotifier sends alert notifications via email (Resend).
+type EmailNotifier struct {
+	APIKey string
+	From   string
+	To     string
+}
+
+// Send implements Notifier for email.
+func (e *EmailNotifier) Send(_ context.Context, message string, meta AlertMetadata) error {
+	_, err := SendEmailNotification(e.APIKey, e.From, e.To, message, meta)
+	return err
+}
 
 const emailHTTPTimeoutSeconds = 10
 

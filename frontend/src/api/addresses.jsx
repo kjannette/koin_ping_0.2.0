@@ -81,6 +81,41 @@ export async function getAddresses() {
 }
 
 /**
+ * Update an address (e.g. change its label)
+ * @param {number} addressId - Address ID to update
+ * @param {Object} data - Fields to update (e.g. { label: "New Label" })
+ * @returns {Promise<Object>} Updated address
+ */
+export async function updateAddress(addressId, data) {
+    try {
+        const headers = await getAuthHeaders();
+        const response = await fetch(`${API_BASE}/addresses/${addressId}`, {
+            method: "PATCH",
+            headers: headers,
+            body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+            let errorMessage = "Failed to update address";
+            try {
+                const error = await response.json();
+                errorMessage = error.message || errorMessage;
+            } catch {
+                errorMessage = `Server error: ${response.status} ${response.statusText}`;
+            }
+            throw new Error(errorMessage);
+        }
+
+        return response.json();
+    } catch (error) {
+        if (error.message.includes("fetch")) {
+            throw new Error("Cannot connect to server. Is the backend running?");
+        }
+        throw error;
+    }
+}
+
+/**
  * Delete a tracked address
  * @param {number} addressId - Address ID to delete
  * @returns {Promise<void>}

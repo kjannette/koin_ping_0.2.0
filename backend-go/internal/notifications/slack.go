@@ -2,12 +2,24 @@ package notifications
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"time"
 )
+
+// SlackNotifier sends alert notifications via a Slack webhook.
+type SlackNotifier struct {
+	WebhookURL string
+}
+
+// Send implements Notifier for Slack.
+func (s *SlackNotifier) Send(_ context.Context, message string, meta AlertMetadata) error {
+	_, err := SendSlackNotification(s.WebhookURL, message, meta)
+	return err
+}
 
 const slackHTTPTimeoutSeconds = 10
 
