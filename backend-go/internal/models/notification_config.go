@@ -45,11 +45,11 @@ func (m *NotificationConfigModel) UpsertConfig(ctx context.Context, userID strin
 		 VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
 		 ON CONFLICT (user_id)
 		 DO UPDATE SET
-		   discord_webhook_url = COALESCE($2, user_notification_configs.discord_webhook_url),
-		   telegram_chat_id = COALESCE($3, user_notification_configs.telegram_chat_id),
-		   telegram_bot_token = COALESCE($4, user_notification_configs.telegram_bot_token),
-		   email = COALESCE($5, user_notification_configs.email),
-		   slack_webhook_url = COALESCE($6, user_notification_configs.slack_webhook_url),
+		   discord_webhook_url = $2,
+		   telegram_chat_id = $3,
+		   telegram_bot_token = $4,
+		   email = $5,
+		   slack_webhook_url = $6,
 		   notification_enabled = $7,
 		   updated_at = NOW()
 		 RETURNING user_id, discord_webhook_url, telegram_chat_id, telegram_bot_token,
