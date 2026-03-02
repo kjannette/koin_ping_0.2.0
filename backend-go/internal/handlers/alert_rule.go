@@ -14,21 +14,17 @@ import (
 	"github.com/kjannette/koin-ping/backend-go/internal/models"
 )
 
-// errThresholdFormat is returned when the threshold JSON cannot be decoded.
 var errThresholdFormat = errors.New("unsupported threshold format")
 
-// AlertRuleHandler handles HTTP requests for alert rule management.
 type AlertRuleHandler struct {
 	alertRules *models.AlertRuleModel
 	addresses  *models.AddressModel
 }
 
-// NewAlertRuleHandler creates a new AlertRuleHandler.
 func NewAlertRuleHandler(alertRules *models.AlertRuleModel, addresses *models.AddressModel) *AlertRuleHandler {
 	return &AlertRuleHandler{alertRules: alertRules, addresses: addresses}
 }
 
-// Create handles POST requests to create a new alert rule for an address.
 func (h *AlertRuleHandler) Create(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r.Context())
 	addressID, ok := parseIntParam(r.PathValue("addressId"))

@@ -1,4 +1,3 @@
-// Package firebase provides Firebase authentication integration.
 package firebase
 
 import (
@@ -17,7 +16,6 @@ var ( //nolint:gochecknoglobals
 	errInit    error        //nolint:gochecknoglobals
 )
 
-// Init initializes the Firebase app and auth client using the given project ID.
 func Init(projectID string) error {
 	once.Do(func() {
 		ctx := context.Background()
@@ -48,7 +46,6 @@ func Init(projectID string) error {
 	return errInit
 }
 
-// Auth returns the initialized Firebase auth client.
 func Auth() *auth.Client {
 	return authClient
 }
