@@ -26,8 +26,8 @@ export default function Navbar() {
       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
         <span style={{
           fontWeight: 700,
-          fontSize: "1.1rem",
-          color: "#fff",
+          fontSize: "1.4rem",
+          color: "#e62525",
           marginRight: "2rem",
           letterSpacing: "0.5px",
         }}>
