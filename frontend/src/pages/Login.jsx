@@ -44,7 +44,7 @@ export default function Login() {
           <span className="login-brand">Koin Ping</span> - Login
         </h1>
 
-        <div style={{ visibility: isVisible ? 'visible' : 'hidden' }}>
+        <div className={isVisible ? 'login-form-visible' : 'login-form-hidden'}>
           {error && (
             <div className="login-error">
               {error}

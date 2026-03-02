@@ -86,3 +86,20 @@
   color: #0066cc;
   text-decoration: none;
 }
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.login-form-hidden {
+  opacity: 0;
+}
+
+.login-form-visible {
+  animation: fadeIn 2s ease-in-out forwards;
+}
