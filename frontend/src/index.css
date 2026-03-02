@@ -59,12 +59,20 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: 'Nunito', sans-serif;
   font-weight: 200;
 }
 
-input, select, textarea, button {
+input,
+select,
+textarea,
+button {
   font-family: 'Nunito', sans-serif;
   font-size: 1rem;
   font-weight: 200;
@@ -102,11 +110,11 @@ input, select, textarea, button {
 /* ── Form Controls ────────────────────────────────────────── */
 
 .form-field {
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 .form-field--last {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.75rem;
 }
 
 .form-label {
@@ -312,13 +320,39 @@ input, select, textarea, button {
 
 /* ── Spacing Helpers ──────────────────────────────────────── */
 
-.mb-0 { margin-bottom: 0; }
-.mb-sm { margin-bottom: 0.5rem; }
-.mb-md { margin-bottom: 1rem; }
-.mb-lg { margin-bottom: 1.5rem; }
-.mb-xl { margin-bottom: 2rem; }
-.mt-0 { margin-top: 0; }
-.mt-md { margin-top: 1rem; }
+.mb-0 {
+  margin-bottom: 0;
+}
 
-.text-white { color: white; }
-.text-white-sm { color: white; font-size: 0.85rem; }
+.mb-sm {
+  margin-bottom: 0.5rem;
+}
+
+.mb-md {
+  margin-bottom: 1rem;
+}
+
+.mb-lg {
+  margin-bottom: 1.5rem;
+}
+
+.mb-xl {
+  margin-bottom: 2rem;
+}
+
+.mt-0 {
+  margin-top: 0;
+}
+
+.mt-md {
+  margin-top: 1rem;
+}
+
+.text-white {
+  color: white;
+}
+
+.text-white-sm {
+  color: white;
+  font-size: 0.85rem;
+}
