@@ -1,0 +1,185 @@
+.onboarding {
+  min-height: 100vh;
+  background-color: var(--color-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 3rem;
+  padding-bottom: 3rem;
+}
+
+.onboarding__container {
+  width: 100%;
+  max-width: 540px;
+  padding: 0 1rem;
+}
+
+.onboarding__title {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: var(--color-primary);
+  letter-spacing: 0.5px;
+}
+
+.onboarding__card {
+  background-color: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-xl);
+  padding: 2rem;
+}
+
+.onboarding__login-link {
+  text-align: center;
+  margin-top: 1.25rem;
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.onboarding__login-link a {
+  color: var(--color-primary);
+}
+
+/* Progress bar */
+.progress-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.progress-bar__step {
+  display: flex;
+  align-items: center;
+}
+
+.progress-bar__connector {
+  width: 40px;
+  height: 2px;
+  margin: 0 4px;
+}
+
+.progress-bar__connector--active {
+  background-color: var(--color-primary);
+}
+
+.progress-bar__connector--inactive {
+  background-color: var(--color-border);
+}
+
+.progress-bar__dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.85rem;
+  color: white;
+  margin: 0 auto 4px;
+}
+
+.progress-bar__dot--done,
+.progress-bar__dot--active {
+  background-color: var(--color-primary);
+}
+
+.progress-bar__dot--active {
+  border: 2px solid #4499ff;
+}
+
+.progress-bar__dot--pending {
+  background-color: var(--color-bg-card);
+  border: 2px solid transparent;
+}
+
+.progress-bar__label {
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+.progress-bar__label--active {
+  color: white;
+}
+
+.progress-bar__label--inactive {
+  color: #888;
+}
+
+/* Step 5 summary */
+.onboarding__summary {
+  background-color: #1e2e1e;
+  border: 1px solid #2d5a2d;
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.onboarding__summary-title {
+  margin: 0 0 0.5rem;
+  color: #90ee90;
+  font-weight: bold;
+}
+
+.onboarding__summary-list {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: var(--color-text-label);
+  line-height: 1.8;
+}
+
+/* Checkbox rows */
+.checkbox-row {
+  margin-bottom: 1rem;
+}
+
+.checkbox-row__label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+  color: #ddd;
+}
+
+.checkbox-row__input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+}
+
+.checkbox-row__nested {
+  margin-top: 0.5rem;
+  margin-left: 1.75rem;
+}
+
+/* Footer navigation */
+.onboarding__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border-light);
+}
+
+/* Test results */
+.test-result {
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+}
+
+.test-result--success {
+  color: #90ee90;
+}
+
+.test-result--failure {
+  color: var(--color-error);
+}
+
+/* Step subtitle */
+.onboarding__subtitle {
+  color: #aaa;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+}

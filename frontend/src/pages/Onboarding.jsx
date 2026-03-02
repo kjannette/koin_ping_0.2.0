@@ -1,7 +1,7 @@
 /**
  * Onboarding Wizard
  *
- * 5-step guided flow: Create Account → Add Wallet → Alert Rules → Notifications → Done
+ * 5-step guided flow: Create Account -> Add Wallet -> Alert Rules -> Notifications -> Done
  */
 
 import { useState, useEffect } from "react";
@@ -13,6 +13,9 @@ import {
     updateNotificationConfig,
     testNotificationChannels,
 } from "../api/notificationConfig";
+import Input from "../components/Input";
+import Button from "../components/Button";
+import "./Onboarding.css";
 
 const STEPS = [
     "Create Account",
@@ -21,24 +24,6 @@ const STEPS = [
     "Notifications",
     "Done",
 ];
-
-const inputStyle = {
-    width: "100%",
-    padding: "0.5rem",
-    fontSize: "1rem",
-    backgroundColor: "#2a2a2a",
-    border: "1px solid #444",
-    borderRadius: "4px",
-    color: "white",
-    boxSizing: "border-box",
-};
-
-const labelStyle = {
-    display: "block",
-    marginBottom: "0.4rem",
-    color: "#ccc",
-    fontSize: "0.9rem",
-};
 
 export default function Onboarding() {
     const { currentUser, signup } = useAuth();
@@ -51,7 +36,6 @@ export default function Onboarding() {
     const [testResults, setTestResults] = useState(null);
     const [testLoading, setTestLoading] = useState(false);
 
-    // Wizard state
     const [data, setData] = useState({
         email: "",
         password: "",
@@ -68,7 +52,6 @@ export default function Onboarding() {
         discordWebhookUrl: "",
         slackWebhookUrl: "",
         notificationEmail: "",
-        // summary
         alertsCreated: [],
         notificationConfigured: false,
     });
@@ -77,7 +60,6 @@ export default function Onboarding() {
         setData((prev) => ({ ...prev, [field]: value }));
     }
 
-    // On mount: if already fully onboarded, redirect away
     useEffect(() => {
         if (!currentUser) return;
         getAddresses()
@@ -86,7 +68,7 @@ export default function Onboarding() {
                     navigate("/addresses", { replace: true });
                 }
             })
-            .catch(() => {}); // ignore errors (e.g. mid-signup)
+            .catch(() => {});
     }, [currentUser, navigate]);
 
     // ── Step handlers ─────────────────────────────────────────────────────────
@@ -105,7 +87,6 @@ export default function Onboarding() {
             setError("Password must be at least 6 characters");
             return;
         }
-        // If user already exists (browser-close-mid-wizard), skip signup
         if (!currentUser) {
             try {
                 setLoading(true);
@@ -237,59 +218,38 @@ export default function Onboarding() {
 
     function ProgressBar() {
         return (
-            <div
-                style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginBottom: "2rem",
-                }}
-            >
+            <div className="progress-bar">
                 {STEPS.map((label, i) => {
                     const stepNum = i + 1;
                     const done = step > stepNum;
                     const active = step === stepNum;
+                    const dotClass = done
+                        ? "progress-bar__dot--done"
+                        : active
+                          ? "progress-bar__dot--active"
+                          : "progress-bar__dot--pending";
+
                     return (
-                        <div
-                            key={label}
-                            style={{ display: "flex", alignItems: "center" }}
-                        >
+                        <div key={label} className="progress-bar__step">
                             {i > 0 && (
                                 <div
-                                    style={{
-                                        width: "40px",
-                                        height: "2px",
-                                        backgroundColor: done || active ? "#0066cc" : "#444",
-                                        margin: "0 4px",
-                                    }}
+                                    className={`progress-bar__connector ${
+                                        done || active
+                                            ? "progress-bar__connector--active"
+                                            : "progress-bar__connector--inactive"
+                                    }`}
                                 />
                             )}
-                            <div style={{ textAlign: "center" }}>
-                                <div
-                                    style={{
-                                        width: "32px",
-                                        height: "32px",
-                                        borderRadius: "50%",
-                                        backgroundColor:
-                                            done ? "#0066cc" : active ? "#0066cc" : "#333",
-                                        border: active ? "2px solid #4499ff" : "2px solid transparent",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        fontWeight: "bold",
-                                        fontSize: "0.85rem",
-                                        color: "white",
-                                        margin: "0 auto 4px",
-                                    }}
-                                >
-                                    {done ? "✓" : stepNum}
+                            <div>
+                                <div className={`progress-bar__dot ${dotClass}`}>
+                                    {done ? "\u2713" : stepNum}
                                 </div>
                                 <div
-                                    style={{
-                                        fontSize: "0.7rem",
-                                        color: active ? "white" : "#888",
-                                        whiteSpace: "nowrap",
-                                    }}
+                                    className={`progress-bar__label ${
+                                        active
+                                            ? "progress-bar__label--active"
+                                            : "progress-bar__label--inactive"
+                                    }`}
                                 >
                                     {label}
                                 </div>
@@ -306,40 +266,32 @@ export default function Onboarding() {
     function Step1() {
         return (
             <>
-                <h2 style={{ marginBottom: "1.5rem" }}>Create your account</h2>
-                <div style={{ marginBottom: "1rem" }}>
-                    <label style={labelStyle}>Email</label>
-                    <input
-                        type="email"
-                        value={data.email}
-                        onChange={(e) => set("email", e.target.value)}
-                        disabled={loading}
-                        style={inputStyle}
-                        placeholder="you@example.com"
-                    />
-                </div>
-                <div style={{ marginBottom: "1rem" }}>
-                    <label style={labelStyle}>Password</label>
-                    <input
-                        type="password"
-                        value={data.password}
-                        onChange={(e) => set("password", e.target.value)}
-                        disabled={loading}
-                        style={inputStyle}
-                        placeholder="At least 6 characters"
-                    />
-                </div>
-                <div style={{ marginBottom: "1.5rem" }}>
-                    <label style={labelStyle}>Confirm Password</label>
-                    <input
-                        type="password"
-                        value={data.confirmPassword}
-                        onChange={(e) => set("confirmPassword", e.target.value)}
-                        disabled={loading}
-                        style={inputStyle}
-                        placeholder="Repeat your password"
-                    />
-                </div>
+                <h2 className="mb-lg">Create your account</h2>
+                <Input
+                    label="Email"
+                    type="email"
+                    value={data.email}
+                    onChange={(v) => set("email", v)}
+                    disabled={loading}
+                    placeholder="you@example.com"
+                />
+                <Input
+                    label="Password"
+                    type="password"
+                    value={data.password}
+                    onChange={(v) => set("password", v)}
+                    disabled={loading}
+                    placeholder="At least 6 characters"
+                />
+                <Input
+                    label="Confirm Password"
+                    type="password"
+                    value={data.confirmPassword}
+                    onChange={(v) => set("confirmPassword", v)}
+                    disabled={loading}
+                    placeholder="Repeat your password"
+                    className="form-field--last"
+                />
             </>
         );
     }
@@ -347,32 +299,25 @@ export default function Onboarding() {
     function Step2() {
         return (
             <>
-                <h2 style={{ marginBottom: "0.5rem" }}>Add a wallet address</h2>
-                <p style={{ color: "#aaa", marginBottom: "1.5rem", fontSize: "0.9rem" }}>
+                <h2 className="mb-sm">Add a wallet address</h2>
+                <p className="onboarding__subtitle">
                     Enter the Ethereum address you want to monitor.
                 </p>
-                <div style={{ marginBottom: "1rem" }}>
-                    <label style={labelStyle}>ETH Address</label>
-                    <input
-                        type="text"
-                        value={data.walletAddress}
-                        onChange={(e) => set("walletAddress", e.target.value)}
-                        disabled={loading}
-                        style={inputStyle}
-                        placeholder="0x..."
-                    />
-                </div>
-                <div style={{ marginBottom: "1.5rem" }}>
-                    <label style={labelStyle}>Label (optional)</label>
-                    <input
-                        type="text"
-                        value={data.walletLabel}
-                        onChange={(e) => set("walletLabel", e.target.value)}
-                        disabled={loading}
-                        style={inputStyle}
-                        placeholder="e.g. My main wallet"
-                    />
-                </div>
+                <Input
+                    label="ETH Address"
+                    value={data.walletAddress}
+                    onChange={(v) => set("walletAddress", v)}
+                    disabled={loading}
+                    placeholder="0x..."
+                />
+                <Input
+                    label="Label (optional)"
+                    value={data.walletLabel}
+                    onChange={(v) => set("walletLabel", v)}
+                    disabled={loading}
+                    placeholder="e.g. My main wallet"
+                    className="form-field--last"
+                />
             </>
         );
     }
@@ -380,8 +325,8 @@ export default function Onboarding() {
     function Step3() {
         return (
             <>
-                <h2 style={{ marginBottom: "0.5rem" }}>Configure alert rules</h2>
-                <p style={{ color: "#aaa", marginBottom: "1.5rem", fontSize: "0.9rem" }}>
+                <h2 className="mb-sm">Configure alert rules</h2>
+                <p className="onboarding__subtitle">
                     Choose which events trigger notifications. You can change these later.
                 </p>
 
@@ -401,12 +346,12 @@ export default function Onboarding() {
                     label="Large transfer"
                 >
                     {data.alertLargeTransfer && (
-                        <div style={{ marginTop: "0.5rem", marginLeft: "1.75rem" }}>
-                            <input
+                        <div className="checkbox-row__nested">
+                            <Input
                                 type="number"
+                                label=""
                                 value={data.largeTransferThreshold}
-                                onChange={(e) => set("largeTransferThreshold", e.target.value)}
-                                style={{ ...inputStyle, width: "160px" }}
+                                onChange={(v) => set("largeTransferThreshold", v)}
                                 placeholder="Threshold (ETH)"
                                 min="0"
                                 step="0.01"
@@ -420,12 +365,12 @@ export default function Onboarding() {
                     label="Balance below"
                 >
                     {data.alertBalanceBelow && (
-                        <div style={{ marginTop: "0.5rem", marginLeft: "1.75rem" }}>
-                            <input
+                        <div className="checkbox-row__nested">
+                            <Input
                                 type="number"
+                                label=""
                                 value={data.balanceBelowThreshold}
-                                onChange={(e) => set("balanceBelowThreshold", e.target.value)}
-                                style={{ ...inputStyle, width: "160px" }}
+                                onChange={(v) => set("balanceBelowThreshold", v)}
                                 placeholder="Threshold (ETH)"
                                 min="0"
                                 step="0.01"
@@ -440,66 +385,64 @@ export default function Onboarding() {
     function Step4() {
         return (
             <>
-                <h2 style={{ marginBottom: "0.5rem" }}>Set up notifications</h2>
-                <p style={{ color: "#aaa", marginBottom: "1.5rem", fontSize: "0.9rem" }}>
+                <h2 className="mb-sm">Set up notifications</h2>
+                <p className="onboarding__subtitle">
                     Add at least one channel so you receive alerts. All fields are optional.
                 </p>
 
-                <div style={{ marginBottom: "1.25rem" }}>
-                    <label style={labelStyle}>
+                <div className="mb-md">
+                    <label className="form-label">
                         Discord Webhook URL{" "}
                         <a
                             href="https://support.discord.com/hc/en-us/articles/228383668"
                             target="_blank"
                             rel="noreferrer"
-                            style={{ color: "#4499ff", fontSize: "0.8rem" }}
+                            className="help-link"
                         >
                             (how to get one)
                         </a>
                     </label>
-                    <input
+                    <Input
+                        label=""
                         type="url"
                         value={data.discordWebhookUrl}
-                        onChange={(e) => set("discordWebhookUrl", e.target.value)}
+                        onChange={(v) => set("discordWebhookUrl", v)}
                         disabled={loading}
-                        style={inputStyle}
                         placeholder="https://discord.com/api/webhooks/..."
                     />
                 </div>
 
-                <div style={{ marginBottom: "1.25rem" }}>
-                    <label style={labelStyle}>
+                <div className="mb-md">
+                    <label className="form-label">
                         Slack Webhook URL{" "}
                         <a
                             href="https://api.slack.com/messaging/webhooks"
                             target="_blank"
                             rel="noreferrer"
-                            style={{ color: "#4499ff", fontSize: "0.8rem" }}
+                            className="help-link"
                         >
                             (how to get one)
                         </a>
                     </label>
-                    <input
+                    <Input
+                        label=""
                         type="url"
                         value={data.slackWebhookUrl}
-                        onChange={(e) => set("slackWebhookUrl", e.target.value)}
+                        onChange={(v) => set("slackWebhookUrl", v)}
                         disabled={loading}
-                        style={inputStyle}
                         placeholder="https://hooks.slack.com/services/..."
                     />
                 </div>
 
-                <div style={{ marginBottom: "1.5rem" }}>
-                    <label style={labelStyle}>Email address for alerts</label>
-                    <input
-                        type="email"
-                        value={data.notificationEmail}
-                        onChange={(e) => set("notificationEmail", e.target.value)}
-                        disabled={loading}
-                        style={inputStyle}
-                        placeholder="you@example.com"
-                    />
-                </div>
+                <Input
+                    label="Email address for alerts"
+                    type="email"
+                    value={data.notificationEmail}
+                    onChange={(v) => set("notificationEmail", v)}
+                    disabled={loading}
+                    placeholder="you@example.com"
+                    className="form-field--last"
+                />
             </>
         );
     }
@@ -510,37 +453,27 @@ export default function Onboarding() {
 
         return (
             <>
-                <h2 style={{ marginBottom: "1rem" }}>You're all set!</h2>
+                <h2 className="mb-md">You're all set!</h2>
 
-                <div
-                    style={{
-                        backgroundColor: "#1e2e1e",
-                        border: "1px solid #2d5a2d",
-                        borderRadius: "6px",
-                        padding: "1rem 1.25rem",
-                        marginBottom: "1.5rem",
-                    }}
-                >
-                    <p style={{ margin: "0 0 0.5rem", color: "#90ee90", fontWeight: "bold" }}>
-                        Summary
-                    </p>
-                    <ul style={{ margin: 0, paddingLeft: "1.25rem", color: "#ccc", lineHeight: "1.8" }}>
+                <div className="onboarding__summary">
+                    <p className="onboarding__summary-title">Summary</p>
+                    <ul className="onboarding__summary-list">
                         <li>
                             Wallet address added:{" "}
-                            <span style={{ color: "white", fontFamily: "monospace", fontSize: "0.85rem" }}>
+                            <span className="text-mono text-white-sm">
                                 {data.walletAddress}
                             </span>
                             {data.walletLabel && ` (${data.walletLabel})`}
                         </li>
                         <li>
                             Alert rules configured:{" "}
-                            <span style={{ color: "white" }}>
+                            <span className="text-white">
                                 {alertCount > 0 ? `${alertCount} rule${alertCount !== 1 ? "s" : ""}` : "None (skipped)"}
                             </span>
                         </li>
                         <li>
                             Notification channels:{" "}
-                            <span style={{ color: "white" }}>
+                            <span className="text-white">
                                 {hasNotif ? "Configured" : "Not set up (skipped)"}
                             </span>
                         </li>
@@ -548,39 +481,27 @@ export default function Onboarding() {
                 </div>
 
                 {hasNotif && (
-                    <div style={{ marginBottom: "1.5rem" }}>
-                        <button
+                    <div className="mb-lg">
+                        <Button
                             onClick={handleTestChannels}
                             disabled={testLoading}
-                            style={{
-                                padding: "0.6rem 1.25rem",
-                                backgroundColor: testLoading ? "#333" : "#1a4d80",
-                                color: "white",
-                                border: "1px solid #0066cc",
-                                borderRadius: "4px",
-                                cursor: testLoading ? "not-allowed" : "pointer",
-                                fontSize: "0.9rem",
-                            }}
+                            variant="ghost"
                         >
                             {testLoading ? "Testing..." : "Test All Channels"}
-                        </button>
+                        </Button>
 
                         {testResults && (
-                            <div style={{ marginTop: "0.75rem" }}>
+                            <div className="mt-md">
                                 {testResults.error ? (
-                                    <p style={{ color: "#ff6666" }}>{testResults.error}</p>
+                                    <p className="text-error">{testResults.error}</p>
                                 ) : (
-                                    <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                                    <ul className="list-unstyled">
                                         {Object.entries(testResults).map(([channel, result]) => (
                                             <li
                                                 key={channel}
-                                                style={{
-                                                    color: result.success ? "#90ee90" : "#ff6666",
-                                                    fontSize: "0.9rem",
-                                                    marginBottom: "0.25rem",
-                                                }}
+                                                className={`test-result ${result.success ? "test-result--success" : "test-result--failure"}`}
                                             >
-                                                {result.success ? "✓" : "✗"} {channel}:{" "}
+                                                {result.success ? "\u2713" : "\u2717"} {channel}:{" "}
                                                 {result.message || (result.success ? "OK" : "Failed")}
                                             </li>
                                         ))}
@@ -591,21 +512,9 @@ export default function Onboarding() {
                     </div>
                 )}
 
-                <button
-                    onClick={() => navigate("/addresses")}
-                    style={{
-                        padding: "0.75rem 2rem",
-                        backgroundColor: "#0066cc",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "4px",
-                        cursor: "pointer",
-                        fontSize: "1rem",
-                        fontWeight: "bold",
-                    }}
-                >
+                <Button onClick={() => navigate("/addresses")} className="btn--lg text-bold">
                     Go to Dashboard →
-                </button>
+                </Button>
             </>
         );
     }
@@ -614,21 +523,13 @@ export default function Onboarding() {
 
     function CheckboxRow({ checked, onChange, label, children }) {
         return (
-            <div style={{ marginBottom: "1rem" }}>
-                <label
-                    style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.6rem",
-                        cursor: "pointer",
-                        color: "#ddd",
-                    }}
-                >
+            <div className="checkbox-row">
+                <label className="checkbox-row__label">
                     <input
                         type="checkbox"
                         checked={checked}
                         onChange={(e) => onChange(e.target.checked)}
-                        style={{ width: "16px", height: "16px", accentColor: "#0066cc" }}
+                        className="checkbox-row__input"
                     />
                     {label}
                 </label>
@@ -666,67 +567,36 @@ export default function Onboarding() {
         }
 
         return (
-            <div
-                style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginTop: "1.5rem",
-                    paddingTop: "1rem",
-                    borderTop: "1px solid #333",
-                }}
-            >
+            <div className="onboarding__footer">
                 <div>
                     {canBack && (
-                        <button
+                        <Button
                             onClick={handleBack}
                             disabled={loading}
-                            style={{
-                                padding: "0.5rem 1rem",
-                                backgroundColor: "transparent",
-                                color: "#aaa",
-                                border: "1px solid #444",
-                                borderRadius: "4px",
-                                cursor: loading ? "not-allowed" : "pointer",
-                            }}
+                            variant="ghost"
                         >
                             ← Back
-                        </button>
+                        </Button>
                     )}
                 </div>
 
-                <div style={{ display: "flex", gap: "0.75rem" }}>
+                <div className="flex gap-md">
                     {canSkip && (
-                        <button
+                        <Button
                             onClick={handleSkip}
                             disabled={loading}
-                            style={{
-                                padding: "0.5rem 1rem",
-                                backgroundColor: "transparent",
-                                color: "#aaa",
-                                border: "1px solid #444",
-                                borderRadius: "4px",
-                                cursor: loading ? "not-allowed" : "pointer",
-                            }}
+                            variant="ghost"
                         >
                             Skip for now
-                        </button>
+                        </Button>
                     )}
-                    <button
+                    <Button
                         onClick={handleNext}
                         disabled={loading}
-                        style={{
-                            padding: "0.5rem 1.25rem",
-                            backgroundColor: loading ? "#333" : "#0066cc",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "4px",
-                            cursor: loading ? "not-allowed" : "pointer",
-                            fontWeight: "bold",
-                        }}
+                        className="text-bold"
                     >
                         {loading ? "Please wait..." : step === 4 ? "Finish" : "Next →"}
-                    </button>
+                    </Button>
                 </div>
             </div>
         );
@@ -743,89 +613,29 @@ export default function Onboarding() {
     };
 
     return (
-        <div
-            style={{
-                minHeight: "100vh",
-                backgroundColor: "#1a1a1a",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "flex-start",
-                paddingTop: "3rem",
-                paddingBottom: "3rem",
-            }}
-        >
-            <div style={{ width: "100%", maxWidth: "540px", padding: "0 1rem" }}>
-                <h1
-                    style={{
-                        textAlign: "center",
-                        marginBottom: "2rem",
-                        color: "#0066cc",
-                        letterSpacing: "0.5px",
-                    }}
-                >
-                    Koin Ping
-                </h1>
+        <div className="onboarding">
+            <div className="onboarding__container">
+                <h1 className="onboarding__title">Koin Ping</h1>
 
                 <ProgressBar />
 
                 {error && (
-                    <div
-                        style={{
-                            padding: "0.75rem 1rem",
-                            marginBottom: "1rem",
-                            backgroundColor: "#3a1a1a",
-                            border: "1px solid #cc3333",
-                            borderRadius: "4px",
-                            color: "#ff6666",
-                            fontSize: "0.9rem",
-                        }}
-                    >
-                        {error}
-                    </div>
+                    <div className="alert alert--error">{error}</div>
                 )}
 
                 {skipWarning && (
-                    <div
-                        style={{
-                            padding: "0.75rem 1rem",
-                            marginBottom: "1rem",
-                            backgroundColor: "#3a2e00",
-                            border: "1px solid #aa7700",
-                            borderRadius: "4px",
-                            color: "#ffcc44",
-                            fontSize: "0.9rem",
-                        }}
-                    >
-                        {skipWarning}
-                    </div>
+                    <div className="alert alert--warning">{skipWarning}</div>
                 )}
 
-                <div
-                    style={{
-                        backgroundColor: "#242424",
-                        border: "1px solid #333",
-                        borderRadius: "8px",
-                        padding: "2rem",
-                    }}
-                >
+                <div className="onboarding__card">
                     {stepContent[step]}
                     <Footer />
                 </div>
 
                 {step === 1 && (
-                    <p
-                        style={{
-                            textAlign: "center",
-                            marginTop: "1.25rem",
-                            color: "#888",
-                            fontSize: "0.9rem",
-                        }}
-                    >
+                    <p className="onboarding__login-link">
                         Already have an account?{" "}
-                        <a href="/login" style={{ color: "#0066cc" }}>
-                            Log in here
-                        </a>
+                        <a href="/login">Log in here</a>
                     </p>
                 )}
             </div>

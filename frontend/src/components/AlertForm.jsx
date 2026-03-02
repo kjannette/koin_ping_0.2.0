@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Input from "./Input";
 import Button from "./Button";
+import "./AlertForm.css";
 
 const ALERT_TYPES = [
     { value: "incoming_tx", label: "Incoming transaction" },
@@ -36,9 +37,9 @@ export default function AlertForm({ onSubmit }) {
 
     return (
         <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: "1rem" }}>
+            <div className="alert-form__options">
                 {ALERT_TYPES.map((opt) => (
-                    <label key={opt.value} style={{ display: "block" }}>
+                    <label key={opt.value} className="alert-form__radio">
                         <input
                             type="radio"
                             name="alertType"

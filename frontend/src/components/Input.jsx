@@ -1,3 +1,5 @@
+import "./Input.css";
+
 export default function Input({
     label,
     type = "text",
@@ -7,12 +9,12 @@ export default function Input({
     step,
     min,
     disabled = false,
+    required = false,
+    className = "",
 }) {
     return (
-        <label style={{ display: "block", marginBottom: "1rem" }}>
-            <div style={{ marginBottom: "0.25rem", fontSize: "0.9rem" }}>
-                {label}
-            </div>
+        <label className={`form-field ${className}`}>
+            <div className="input__label">{label}</div>
             <input
                 type={type}
                 value={value}
@@ -20,12 +22,9 @@ export default function Input({
                 step={step}
                 min={min}
                 disabled={disabled}
+                required={required}
                 onChange={(e) => onChange(e.target.value)}
-                style={{
-                    width: "100%",
-                    padding: "0.5rem",
-                    fontSize: "1rem",
-                }}
+                className="input__control"
             />
         </label>
     );

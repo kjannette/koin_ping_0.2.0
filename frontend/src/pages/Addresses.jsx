@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import AddressForm from "../components/AddressForm";
 import { getAddresses, createAddress, deleteAddress, updateAddress } from "../api/addresses";
+import "./Addresses.css";
 
 export default function Addresses() {
     const [addresses, setAddresses] = useState([]);
@@ -9,7 +10,6 @@ export default function Addresses() {
     const [editingId, setEditingId] = useState(null);
     const [editLabel, setEditLabel] = useState("");
 
-    // Load addresses on mount
     useEffect(() => {
         async function fetchAddresses() {
             try {
@@ -27,7 +27,6 @@ export default function Addresses() {
         fetchAddresses();
     }, []);
 
-    // Handle new address submission
     async function handleAddressSubmit(data) {
         try {
             const newAddress = await createAddress(data);
@@ -78,51 +77,35 @@ export default function Addresses() {
     }
 
     return (
-        <div style={{ maxWidth: "800px", margin: "0 auto", padding: "2rem" }}>
-            <h1>Tracked Addresses</h1>
+        <div className="page">
+            <h1>Add Addresses to Track</h1>
 
-            <div style={{ marginBottom: "2rem" }}>
+            <div className="mb-xl">
                 <AddressForm onSubmit={handleAddressSubmit} />
             </div>
 
             <div>
-                <h2>Existing Addresses</h2>
+                <h2>Existing Tracked Addresses</h2>
                 {loading && <p>Loading addresses...</p>}
-                {error && <p style={{ color: "red" }}>Error: {error}</p>}
+                {error && <p className="text-error">Error: {error}</p>}
                 {!loading && !error && addresses.length === 0 && (
-                    <p style={{ color: "#808080" }}>
+                    <p className="text-dimmed">
                         No addresses tracked yet. Add one above to get started.
                     </p>
                 )}
                 {addresses.length > 0 && (
-                    <ul style={{ listStyle: "none", padding: 0 }}>
+                    <ul className="list-unstyled">
                         {addresses.map((addr, index) => (
-                            <li
-                                key={addr.id || index}
-                                style={{
-                                    padding: "1rem",
-                                    marginBottom: "0.5rem",
-                                    border: "1px solid #444",
-                                    borderRadius: "4px",
-                                    backgroundColor: "#333",
-                                }}
-                            >
-                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                    <div style={{ flex: 1 }}>
+                            <li key={addr.id || index} className="list-item--card">
+                                <div className="flex flex--between flex--center">
+                                    <div>
                                         {editingId === addr.id ? (
-                                            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginBottom: "0.25rem" }}>
+                                            <div className="flex flex--center gap-sm mb-sm">
                                                 <input
                                                     value={editLabel}
                                                     onChange={(e) => setEditLabel(e.target.value)}
                                                     placeholder="Label (optional)"
-                                                    style={{
-                                                        background: "#444",
-                                                        border: "1px solid #666",
-                                                        borderRadius: "3px",
-                                                        color: "#fff",
-                                                        padding: "0.25rem 0.5rem",
-                                                        fontSize: "0.9rem",
-                                                    }}
+                                                    className="address__edit-input"
                                                     onKeyDown={(e) => {
                                                         if (e.key === "Enter") handleEditSave(addr.id);
                                                         if (e.key === "Escape") handleEditCancel();
@@ -131,61 +114,37 @@ export default function Addresses() {
                                                 />
                                                 <button
                                                     onClick={() => handleEditSave(addr.id)}
-                                                    style={{ cursor: "pointer", padding: "0.25rem 0.6rem", fontSize: "0.85rem" }}
+                                                    className="btn btn--primary btn--sm"
                                                 >
                                                     Save
                                                 </button>
                                                 <button
                                                     onClick={handleEditCancel}
-                                                    style={{ cursor: "pointer", padding: "0.25rem 0.6rem", fontSize: "0.85rem", background: "transparent", color: "#aaa", border: "1px solid #555" }}
+                                                    className="btn btn--ghost btn--sm"
                                                 >
                                                     Cancel
                                                 </button>
                                             </div>
                                         ) : (
-                                            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
-                                                <span style={{ fontWeight: "bold" }}>
+                                            <div className="flex flex--center gap-sm mb-sm">
+                                                <span className="text-bold">
                                                     {addr.label || "Unlabeled"}
                                                 </span>
                                                 <button
                                                     onClick={() => handleEditStart(addr)}
-                                                    style={{
-                                                        cursor: "pointer",
-                                                        background: "transparent",
-                                                        border: "none",
-                                                        color: "#6699cc",
-                                                        fontSize: "0.8rem",
-                                                        padding: "0",
-                                                        textDecoration: "underline",
-                                                    }}
+                                                    className="address__edit-link"
                                                 >
                                                     Edit
                                                 </button>
                                             </div>
                                         )}
-                                        <div
-                                            style={{
-                                                fontFamily: "monospace",
-                                                fontSize: "1.035rem",
-                                                color: "#b3b3b3",
-                                            }}
-                                        >
+                                        <div className="text-mono text-sm text-muted">
                                             {addr.address}
                                         </div>
                                     </div>
                                     <button
                                         onClick={() => handleDelete(addr.id, addr.label)}
-                                        style={{
-                                            cursor: "pointer",
-                                            background: "transparent",
-                                            border: "1px solid #884444",
-                                            color: "#cc6666",
-                                            borderRadius: "3px",
-                                            padding: "0.3rem 0.7rem",
-                                            fontSize: "0.85rem",
-                                            marginLeft: "1rem",
-                                            flexShrink: 0,
-                                        }}
+                                        className="address__remove"
                                     >
                                         Remove
                                     </button>

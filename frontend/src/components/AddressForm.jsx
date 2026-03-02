@@ -37,7 +37,7 @@ export default function AddressForm({ onSubmit }) {
                 placeholder="Treasury, Cold Wallet, etc."
             />
 
-            <Button type="submit" disabled={!canSubmit}>
+            <Button type="submit" disabled={!canSubmit} className="mt-md">
                 Add Address
             </Button>
         </form>
