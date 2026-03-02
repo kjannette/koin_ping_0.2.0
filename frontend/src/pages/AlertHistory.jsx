@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { getAlertEvents } from "../api/alertEvents";
+import "./AlertHistory.css";
 
 export default function AlertHistory() {
     const [alertEvents, setAlertEvents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // Fetch alert events on mount
     useEffect(() => {
         async function fetchAlertEvents() {
             try {
@@ -25,49 +25,32 @@ export default function AlertHistory() {
     }, []);
 
     if (loading) {
-        return <div style={{ padding: "2rem" }}>Loading...</div>;
+        return <div className="page">Loading...</div>;
     }
 
     if (error) {
         return (
-            <div style={{ padding: "2rem", color: "red" }}>Error: {error}</div>
+            <div className="page text-error">Error: {error}</div>
         );
     }
 
     return (
-        <div style={{ maxWidth: "800px", margin: "0 auto", padding: "2rem" }}>
+        <div className="page">
             <h1>Recent Alert Events</h1>
 
             {alertEvents.length === 0 ? (
-                <p style={{ color: "#808080" }}>No alerts yet</p>
+                <p className="text-dimmed">No alerts yet</p>
             ) : (
-                <ul style={{ listStyle: "none", padding: 0 }}>
+                <ul className="list-unstyled">
                     {alertEvents.map((event) => (
-                        <li
-                            key={event.id}
-                            style={{
-                                padding: "1rem",
-                                marginBottom: "0.75rem",
-                                border: "1px solid #444",
-                                borderRadius: "4px",
-                                backgroundColor: "#333",
-                            }}
-                        >
-                            <div style={{ marginBottom: "0.5rem" }}>
-                                {event.message}
-                            </div>
+                        <li key={event.id} className="alert-history__item">
+                            <div className="mb-sm">{event.message}</div>
                             {event.address_label && (
-                                <div
-                                    style={{
-                                    fontSize: "1.035rem",
-                                    color: "#808080",
-                                        marginBottom: "0.25rem",
-                                    }}
-                                >
+                                <div className="text-sm text-dimmed">
                                     Address: {event.address_label}
                                 </div>
                             )}
-                            <small style={{ color: "#b3b3b3" }}>
+                            <small className="text-muted">
                                 {formatTimestamp(event.timestamp)}
                             </small>
                         </li>
@@ -78,7 +61,6 @@ export default function AlertHistory() {
     );
 }
 
-// Helper to format timestamp for display
 function formatTimestamp(timestamp) {
     const date = new Date(timestamp);
     return date.toLocaleString();

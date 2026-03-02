@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import Input from "../components/Input";
 import "./Login.css";
 
 export default function Login() {
@@ -16,7 +17,6 @@ export default function Login() {
   async function handleSubmit(e) {
     e.preventDefault();
 
-    // Validation
     if (!email || !password) {
       setError("Please fill in all fields");
       return;
@@ -26,7 +26,7 @@ export default function Login() {
       setError("");
       setLoading(true);
       await login(email, password);
-      navigate("/addresses"); // Redirect to main app
+      navigate("/addresses");
     } catch (err) {
       setError("Failed to log in: " + err.message);
     } finally {
@@ -36,66 +36,42 @@ export default function Login() {
 
   return (
     <div className="login-page">
-      <div
-        className="login-card"
-        onMouseEnter={() => setIsVisible(true)}
-      >
+      <div className="login-card" onMouseEnter={() => setIsVisible(true)}>
         <h1 className="login-heading">
           <span className="login-brand">Koin Ping</span> - Login
         </h1>
 
-        <div className={isVisible ? 'login-form-visible' : 'login-form-hidden'}>
-          {error && (
-            <div className="login-error">
-              {error}
-            </div>
-          )}
+        <div className={isVisible ? "login-form-visible" : "login-form-hidden"}>
+          {error && <div className="alert alert--error">{error}</div>}
 
           <form onSubmit={handleSubmit}>
-            <div className="login-field">
-              <label className="login-label">
-                Email
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={loading}
-                className="login-input"
-                required
-              />
-            </div>
-
-            <div className="login-field-last">
-              <label className="login-label">
-                Password
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={loading}
-                className="login-input"
-                required
-              />
-            </div>
-
-            <button
-              type="submit"
+            <Input
+              label="Email"
+              type="email"
+              value={email}
+              onChange={setEmail}
               disabled={loading}
-              className="login-button"
-            >
+              required
+            />
+            <Input
+              label="Password"
+              type="password"
+              value={password}
+              onChange={setPassword}
+              disabled={loading}
+              required
+              className="form-field--last"
+            />
+
+            <button type="submit" disabled={loading} className="btn btn--primary login-button">
               {loading ? "Logging in..." : "Log In"}
             </button>
           </form>
 
           <div className="login-footer">
-            <p className="login-footer-text">
+            <p className="text-muted">
               Don't have an account?{" "}
-              <Link
-                to="/signup"
-                className="login-signup-link"
-              >
+              <Link to="/signup" className="login-signup-link">
                 Sign up here
               </Link>
             </p>

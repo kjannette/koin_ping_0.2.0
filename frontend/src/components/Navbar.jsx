@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import "./Navbar.css";
 
 const navLinks = [
   { to: "/addresses", label: "Addresses" },
@@ -14,43 +15,17 @@ export default function Navbar() {
   if (!currentUser) return null;
 
   return (
-    <nav style={{
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      padding: "1rem 2rem",
-      marginBottom: "1.5rem",
-      backgroundColor: "#1a1a1a",
-      borderBottom: "1px solid #333",
-    }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-        <span style={{
-          fontWeight: 700,
-          fontSize: "1.4rem",
-          color: "#e62525",
-          marginRight: "2rem",
-          letterSpacing: "0.5px",
-        }}>
-          Koin Ping
-        </span>
-
-        <div style={{ display: "flex", gap: "0.25rem" }}>
+    <nav className="navbar">
+      <div className="flex flex--center gap-sm">
+        <span className="navbar__brand">Koin Ping</span>
+        <div className="navbar__links">
           {navLinks.map(({ to, label }) => {
             const isActive = location.pathname === to;
             return (
               <Link
                 key={to}
                 to={to}
-                style={{
-                  padding: "0.5rem 1.25rem",
-                  borderRadius: "6px",
-                  textDecoration: "none",
-                  fontSize: "1.425rem",
-                  fontWeight: isActive ? 600 : 200,
-                  color: isActive ? "#fff" : "#999",
-                  backgroundColor: isActive ? "#333" : "transparent",
-                  transition: "all 0.15s ease",
-                }}
+                className={`navbar__link ${isActive ? "navbar__link--active" : ""}`}
               >
                 {label}
               </Link>
@@ -59,24 +34,9 @@ export default function Navbar() {
         </div>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: "1.25rem" }}>
-        <span style={{ fontSize: "1.275rem", color: "#777" }}>
-          {currentUser.email}
-        </span>
-        <button
-          onClick={logout}
-          style={{
-            padding: "0.4rem 1rem",
-            fontSize: "1.275rem",
-            fontWeight: 400,
-            backgroundColor: "transparent",
-            color: "#999",
-            border: "1px solid #444",
-            borderRadius: "6px",
-            cursor: "pointer",
-            transition: "all 0.15s ease",
-          }}
-        >
+      <div className="flex flex--center gap-lg">
+        <span className="navbar__user">{currentUser.email}</span>
+        <button onClick={logout} className="navbar__logout">
           Logout
         </button>
       </div>

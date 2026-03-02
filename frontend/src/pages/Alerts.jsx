@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import AlertForm from "../components/AlertForm";
 import Button from "../components/Button";
+import Input from "../components/Input";
 import { getAddresses } from "../api/addresses";
 import {
     getAlerts,
@@ -15,35 +16,7 @@ import {
     setupEmail,
     sendEmailDigest,
 } from "../api/notificationConfig";
-
-const inputStyle = {
-    width: "100%",
-    padding: "0.5rem",
-    fontSize: "0.9rem",
-    backgroundColor: "#1a1a1a",
-    border: "1px solid #444",
-    borderRadius: "4px",
-    color: "white",
-    fontFamily: "monospace",
-    boxSizing: "border-box",
-};
-
-const labelStyle = {
-    display: "block",
-    marginBottom: "0.25rem",
-    fontSize: "0.9rem",
-    color: "#ccc",
-};
-
-const helpLinkStyle = { color: "#0066cc", fontSize: "0.85rem" };
-
-const sectionStyle = {
-    marginBottom: "1.5rem",
-    padding: "1rem",
-    backgroundColor: "#2a2a2a",
-    borderRadius: "6px",
-    border: "1px solid #3a3a3a",
-};
+import "./Alerts.css";
 
 export default function Alerts() {
     const [addresses, setAddresses] = useState([]);
@@ -52,7 +25,6 @@ export default function Alerts() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // Notification config state
     const [notificationEnabled, setNotificationEnabled] = useState(false);
     const [discordWebhookUrl, setDiscordWebhookUrl] = useState("");
     const [telegramBotToken, setTelegramBotToken] = useState("");
@@ -273,42 +245,28 @@ export default function Alerts() {
     const selectedAddress = addresses.find((a) => a.id === selectedAddressId);
 
     if (loading) {
-        return <div style={{ padding: "2rem" }}>Loading addresses...</div>;
+        return <div className="page">Loading addresses...</div>;
     }
 
     if (addresses.length === 0) {
         return (
-            <div style={{ padding: "2rem" }}>
-                <p>
-                    No addresses tracked yet. Add an address first to create
-                    alerts.
-                </p>
+            <div className="page">
+                <p>No addresses tracked yet. Add an address first to create alerts.</p>
             </div>
         );
     }
 
     return (
-        <div style={{ maxWidth: "1400px", margin: "0 auto", padding: "2rem" }}>
-            <h1 style={{ marginBottom: "2rem" }}>
-                Alert Rules & Notifications
-            </h1>
+        <div className="page page--wide">
+            <h1 className="mb-xl">Alert Rules & Notifications</h1>
 
-            <div
-                style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "2rem",
-                    alignItems: "start",
-                }}
-            >
+            <div className="alerts-grid">
                 {/* LEFT COLUMN: Alert Rules */}
                 <div>
-                    <h2 style={{ marginTop: 0 }}>Alert Rules</h2>
+                    <h2 className="mt-0">Alert Rules</h2>
 
-                    <div style={{ marginBottom: "2rem" }}>
-                        <label
-                            style={{ display: "block", marginBottom: "0.5rem" }}
-                        >
+                    <div className="mb-xl">
+                        <label className="form-label mb-sm">
                             <strong>Select Address:</strong>
                         </label>
                         <select
@@ -316,15 +274,7 @@ export default function Alerts() {
                             onChange={(e) =>
                                 setSelectedAddressId(Number(e.target.value))
                             }
-                            style={{
-                                width: "100%",
-                                padding: "0.5rem",
-                                fontSize: "1rem",
-                                backgroundColor: "#1a1a1a",
-                                border: "1px solid #444",
-                                borderRadius: "4px",
-                                color: "white",
-                            }}
+                            className="form-select"
                         >
                             {addresses.map((addr) => (
                                 <option key={addr.id} value={addr.id}>
@@ -336,43 +286,19 @@ export default function Alerts() {
 
                     {selectedAddress && (
                         <>
-                            <div
-                                style={{
-                                    padding: "1rem",
-                                    marginBottom: "2rem",
-                                    backgroundColor: "#333",
-                                    borderRadius: "4px",
-                                    border: "1px solid #444",
-                                }}
-                            >
-                                <div
-                                    style={{
-                                        fontSize: "1.035rem",
-                                        color: "#b3b3b3",
-                                    }}
-                                >
+                            <div className="alerts__address-info">
+                                <div className="text-sm text-muted">
                                     Managing alerts for:
                                 </div>
-                                <div
-                                    style={{
-                                        fontWeight: "bold",
-                                        marginTop: "0.25rem",
-                                    }}
-                                >
+                                <div className="text-bold">
                                     {selectedAddress.label || "Unlabeled"}
                                 </div>
-                                <div
-                                    style={{
-                                        fontFamily: "monospace",
-                                        fontSize: "1.035rem",
-                                        color: "#b3b3b3",
-                                    }}
-                                >
+                                <div className="text-mono text-sm text-muted">
                                     {selectedAddress.address}
                                 </div>
                             </div>
 
-                            <div style={{ marginBottom: "2rem" }}>
+                            <div className="mb-xl">
                                 <h3>Create New Alert</h3>
                                 <AlertForm onSubmit={handleAlertSubmit} />
                             </div>
@@ -380,112 +306,43 @@ export default function Alerts() {
                             <div>
                                 <h3>Active Alert Rules</h3>
                                 {error && (
-                                    <p style={{ color: "red" }}>
-                                        Error: {error}
-                                    </p>
+                                    <p className="text-error">Error: {error}</p>
                                 )}
                                 {alerts.length === 0 ? (
-                                    <p style={{ color: "#666" }}>
-                                        No alert rules defined yet. Create one
-                                        above.
+                                    <p className="text-dimmed">
+                                        No alert rules defined yet. Create one above.
                                     </p>
                                 ) : (
-                                    <ul
-                                        style={{
-                                            listStyle: "none",
-                                            padding: 0,
-                                        }}
-                                    >
+                                    <ul className="list-unstyled">
                                         {alerts.map((alert) => (
                                             <li
                                                 key={alert.id}
-                                                style={{
-                                                    padding: "1rem",
-                                                    marginBottom: "0.5rem",
-                                                    border: "1px solid #444",
-                                                    borderRadius: "4px",
-                                                    backgroundColor: "#333",
-                                                    opacity: alert.enabled
-                                                        ? 1
-                                                        : 0.6,
-                                                }}
+                                                className={`alerts__rule ${!alert.enabled ? "alerts__rule--disabled" : ""}`}
                                             >
-                                                <div
-                                                    style={{
-                                                        display: "flex",
-                                                        justifyContent:
-                                                            "space-between",
-                                                        alignItems:
-                                                            "flex-start",
-                                                    }}
-                                                >
-                                                    <div style={{ flex: 1 }}>
-                                                        <div
-                                                            style={{
-                                                                fontWeight:
-                                                                    "bold",
-                                                                marginBottom:
-                                                                    "0.25rem",
-                                                            }}
-                                                        >
-                                                            {formatAlertType(
-                                                                alert.type,
-                                                            )}
+                                                <div className="flex flex--between">
+                                                    <div>
+                                                        <div className="text-bold mb-sm">
+                                                            {formatAlertType(alert.type)}
                                                         </div>
                                                         {alert.threshold && (
-                                                            <div
-                                                                style={{
-                                                                    fontSize:
-                                                                        "1.035rem",
-                                                                    color: "#b3b3b3",
-                                                                }}
-                                                            >
-                                                                Threshold:{" "}
-                                                                {
-                                                                    alert.threshold
-                                                                }{" "}
-                                                                ETH
+                                                            <div className="text-sm text-muted">
+                                                                Threshold: {alert.threshold} ETH
                                                             </div>
                                                         )}
-                                                        <div
-                                                            style={{
-                                                                fontSize:
-                                                                    "0.978rem",
-                                                                color: "#808080",
-                                                                marginTop:
-                                                                    "0.25rem",
-                                                            }}
-                                                        >
-                                                            Status:{" "}
-                                                            {alert.enabled
-                                                                ? "Enabled"
-                                                                : "Disabled"}
+                                                        <div className="text-xs text-dimmed">
+                                                            Status: {alert.enabled ? "Enabled" : "Disabled"}
                                                         </div>
                                                     </div>
-                                                    <div
-                                                        style={{
-                                                            display: "flex",
-                                                            gap: "0.5rem",
-                                                        }}
-                                                    >
+                                                    <div className="flex flex--center gap-sm">
                                                         <Button
                                                             onClick={() =>
-                                                                handleToggleAlert(
-                                                                    alert.id,
-                                                                    alert.enabled,
-                                                                )
+                                                                handleToggleAlert(alert.id, alert.enabled)
                                                             }
                                                         >
-                                                            {alert.enabled
-                                                                ? "Disable"
-                                                                : "Enable"}
+                                                            {alert.enabled ? "Disable" : "Enable"}
                                                         </Button>
                                                         <Button
-                                                            onClick={() =>
-                                                                handleDeleteAlert(
-                                                                    alert.id,
-                                                                )
-                                                            }
+                                                            onClick={() => handleDeleteAlert(alert.id)}
                                                         >
                                                             Delete
                                                         </Button>
@@ -502,329 +359,152 @@ export default function Alerts() {
 
                 {/* RIGHT COLUMN: Notification Settings */}
                 <div>
-                    <h2 style={{ marginTop: 0 }}>Notification Settings</h2>
+                    <h2 className="mt-0">Notification Settings</h2>
 
                     {notificationSuccess && (
-                        <div
-                            style={{
-                                padding: "0.75rem",
-                                marginBottom: "1rem",
-                                backgroundColor: "#00ff0020",
-                                border: "1px solid #00ff00",
-                                borderRadius: "4px",
-                                color: "#00ff00",
-                            }}
-                        >
-                            {notificationSuccess}
-                        </div>
+                        <div className="alert alert--success">{notificationSuccess}</div>
                     )}
 
                     {notificationError && (
-                        <div
-                            style={{
-                                padding: "0.75rem",
-                                marginBottom: "1rem",
-                                backgroundColor: "#ff000020",
-                                border: "1px solid #ff0000",
-                                borderRadius: "4px",
-                                color: "#ff6666",
-                            }}
-                        >
-                            {notificationError}
-                        </div>
+                        <div className="alert alert--error">{notificationError}</div>
                     )}
 
                     {/* Master toggle */}
-                    <div
-                        style={{
-                            marginBottom: "1.5rem",
-                            padding: "1rem",
-                            backgroundColor: "#333",
-                            borderRadius: "4px",
-                        }}
-                    >
-                        <label
-                            style={{
-                                display: "flex",
-                                alignItems: "center",
-                                cursor: "pointer",
-                            }}
-                        >
+                    <div className="alerts__toggle-panel">
+                        <label className="alerts__toggle-label">
                             <input
                                 type="checkbox"
                                 checked={notificationEnabled}
                                 onChange={(e) =>
                                     setNotificationEnabled(e.target.checked)
                                 }
-                                style={{
-                                    marginRight: "0.5rem",
-                                    width: "18px",
-                                    height: "18px",
-                                }}
+                                className="alerts__toggle-checkbox"
                             />
-                            <span style={{ fontWeight: "bold" }}>
-                                Enable Notifications
-                            </span>
+                            <span className="text-bold">Enable Notifications</span>
                         </label>
-                        <div
-                            style={{
-                                fontSize: "0.978rem",
-                                color: "#808080",
-                                marginTop: "0.5rem",
-                                marginLeft: "26px",
-                            }}
-                        >
+                        <div className="alerts__toggle-hint">
                             Master switch for all notification channels
                         </div>
                     </div>
 
-                    {/* All channel settings — hidden when master toggle is off */}
-                    <div
-                        style={{
-                            display: notificationEnabled ? "block" : "none",
-                        }}
-                    >
-                        {/* Telegram */}
-                        <div style={sectionStyle}>
-                            <h3 style={{ marginTop: 0, marginBottom: "1rem" }}>
-                                Telegram
-                            </h3>
-
-                            <div style={{ marginBottom: "0.75rem" }}>
-                                <label style={labelStyle}>Bot Token</label>
-                                <input
-                                    type="text"
+                    {/* All channel settings -- hidden when master toggle is off */}
+                    {notificationEnabled && (
+                        <>
+                            {/* Telegram */}
+                            <div className="section">
+                                <h3 className="mt-0 mb-md">Telegram</h3>
+                                <Input
+                                    label="Bot Token"
                                     value={telegramBotToken}
-                                    onChange={(e) =>
-                                        setTelegramBotToken(e.target.value)
-                                    }
+                                    onChange={setTelegramBotToken}
                                     placeholder="123456789:ABCdefGHIjklMNOpqrSTUvwxYZ"
-                                    style={inputStyle}
                                 />
-                            </div>
-
-                            <div style={{ marginBottom: "0.5rem" }}>
-                                <label style={labelStyle}>Chat ID</label>
-                                <input
-                                    type="text"
+                                <Input
+                                    label="Chat ID"
                                     value={telegramChatId}
-                                    onChange={(e) =>
-                                        setTelegramChatId(e.target.value)
-                                    }
+                                    onChange={setTelegramChatId}
                                     placeholder="-1001234567890"
-                                    style={inputStyle}
                                 />
+                                <a
+                                    href="https://core.telegram.org/bots#how-do-i-create-a-bot"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="help-link"
+                                >
+                                    How to create a Telegram bot & get your Chat ID
+                                </a>
                             </div>
 
-                            <a
-                                href="https://core.telegram.org/bots#how-do-i-create-a-bot"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={helpLinkStyle}
-                            >
-                                How to create a Telegram bot & get your Chat ID
-                            </a>
-                        </div>
-
-                        {/* Email */}
-                        <div style={sectionStyle}>
-                            <h3 style={{ marginTop: 0, marginBottom: "1rem" }}>
-                                Email
-                            </h3>
-
-                            <div style={{ marginBottom: "0.75rem" }}>
-                                <label style={labelStyle}>Email Address</label>
-                                <input
+                            {/* Email */}
+                            <div className="section">
+                                <h3 className="mt-0 mb-md">Email</h3>
+                                <Input
+                                    label="Email Address"
                                     type="email"
                                     value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
+                                    onChange={setEmail}
                                     placeholder="you@example.com"
-                                    style={inputStyle}
                                 />
+                                <div className="help-link text-dimmed mb-md">
+                                    Alert notifications and digests will be sent to this address
+                                </div>
+                                <div className="alerts__email-buttons">
+                                    <Button
+                                        onClick={handleSetupEmail}
+                                        disabled={settingUpEmail || !email}
+                                        className="btn--sm"
+                                    >
+                                        {settingUpEmail ? "Setting up..." : "Verify Email"}
+                                    </Button>
+                                    <Button
+                                        onClick={handleSendDigest}
+                                        disabled={sendingDigest || !email}
+                                        variant="secondary"
+                                        className="btn--sm"
+                                    >
+                                        {sendingDigest ? "Sending..." : "Send Digest Now"}
+                                    </Button>
+                                </div>
                             </div>
 
-                            <div
-                                style={{
-                                    fontSize: "0.85rem",
-                                    color: "#808080",
-                                    marginBottom: "0.75rem",
-                                }}
-                            >
-                                Alert notifications and digests will be sent to
-                                this address
-                            </div>
-
-                            <div
-                                style={{
-                                    display: "flex",
-                                    gap: "0.5rem",
-                                }}
-                            >
-                                <button
-                                    onClick={handleSetupEmail}
-                                    disabled={settingUpEmail || !email}
-                                    style={{
-                                        padding: "0.5rem 1rem",
-                                        fontSize: "0.85rem",
-                                        backgroundColor:
-                                            settingUpEmail || !email
-                                                ? "#333"
-                                                : "#0066cc",
-                                        color: "white",
-                                        border: "none",
-                                        borderRadius: "4px",
-                                        cursor:
-                                            settingUpEmail || !email
-                                                ? "not-allowed"
-                                                : "pointer",
-                                    }}
-                                >
-                                    {settingUpEmail
-                                        ? "Setting up..."
-                                        : "Verify Email"}
-                                </button>
-
-                                <button
-                                    onClick={handleSendDigest}
-                                    disabled={sendingDigest || !email}
-                                    style={{
-                                        padding: "0.5rem 1rem",
-                                        fontSize: "0.85rem",
-                                        backgroundColor:
-                                            sendingDigest || !email
-                                                ? "#333"
-                                                : "#6c757d",
-                                        color: "white",
-                                        border: "none",
-                                        borderRadius: "4px",
-                                        cursor:
-                                            sendingDigest || !email
-                                                ? "not-allowed"
-                                                : "pointer",
-                                    }}
-                                >
-                                    {sendingDigest
-                                        ? "Sending..."
-                                        : "Send Digest Now"}
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Discord */}
-                        <div style={sectionStyle}>
-                            <h3 style={{ marginTop: 0, marginBottom: "1rem" }}>
-                                Discord
-                            </h3>
-
-                            <div style={{ marginBottom: "0.5rem" }}>
-                                <label style={labelStyle}>
-                                    Discord Webhook URL
-                                </label>
-                                <input
-                                    type="text"
+                            {/* Discord */}
+                            <div className="section">
+                                <h3 className="mt-0 mb-md">Discord</h3>
+                                <Input
+                                    label="Discord Webhook URL"
                                     value={discordWebhookUrl}
-                                    onChange={(e) =>
-                                        setDiscordWebhookUrl(e.target.value)
-                                    }
+                                    onChange={setDiscordWebhookUrl}
                                     placeholder="https://discord.com/api/webhooks/..."
-                                    style={inputStyle}
                                 />
+                                <a
+                                    href="https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="help-link"
+                                >
+                                    How to get a Discord webhook URL
+                                </a>
                             </div>
 
-                            <a
-                                href="https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={helpLinkStyle}
-                            >
-                                How to get a Discord webhook URL
-                            </a>
-                        </div>
-
-                        {/* Slack */}
-                        <div style={sectionStyle}>
-                            <h3 style={{ marginTop: 0, marginBottom: "1rem" }}>
-                                Slack
-                            </h3>
-
-                            <div style={{ marginBottom: "0.5rem" }}>
-                                <label style={labelStyle}>
-                                    Slack Webhook URL
-                                </label>
-                                <input
-                                    type="text"
+                            {/* Slack */}
+                            <div className="section">
+                                <h3 className="mt-0 mb-md">Slack</h3>
+                                <Input
+                                    label="Slack Webhook URL"
                                     value={slackWebhookUrl}
-                                    onChange={(e) =>
-                                        setSlackWebhookUrl(e.target.value)
-                                    }
+                                    onChange={setSlackWebhookUrl}
                                     placeholder="https://hooks.slack.com/services/..."
-                                    style={inputStyle}
                                 />
+                                <a
+                                    href="https://api.slack.com/messaging/webhooks"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="help-link"
+                                >
+                                    How to set up Slack Incoming Webhooks
+                                </a>
                             </div>
 
-                            <a
-                                href="https://api.slack.com/messaging/webhooks"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={helpLinkStyle}
-                            >
-                                How to set up Slack Incoming Webhooks
-                            </a>
-                        </div>
-
-                        {/* Save & Test buttons at the bottom */}
-                        <div
-                            style={{
-                                display: "flex",
-                                gap: "0.75rem",
-                                marginTop: "1rem",
-                            }}
-                        >
-                            <button
-                                onClick={handleSaveNotificationConfig}
-                                disabled={notificationLoading}
-                                style={{
-                                    padding: "0.75rem 1.5rem",
-                                    fontSize: "1rem",
-                                    backgroundColor: notificationLoading
-                                        ? "#333"
-                                        : "#0066cc",
-                                    color: "white",
-                                    border: "none",
-                                    borderRadius: "4px",
-                                    cursor: notificationLoading
-                                        ? "not-allowed"
-                                        : "pointer",
-                                }}
-                            >
-                                {notificationLoading
-                                    ? "Saving..."
-                                    : "Save Settings"}
-                            </button>
-
-                            <button
-                                onClick={handleTestChannels}
-                                disabled={testingChannels}
-                                style={{
-                                    padding: "0.75rem 1.5rem",
-                                    fontSize: "1rem",
-                                    backgroundColor: testingChannels
-                                        ? "#333"
-                                        : "#28a745",
-                                    color: "white",
-                                    border: "none",
-                                    borderRadius: "4px",
-                                    cursor: testingChannels
-                                        ? "not-allowed"
-                                        : "pointer",
-                                }}
-                            >
-                                {testingChannels
-                                    ? "Testing..."
-                                    : "Test All Channels"}
-                            </button>
-                        </div>
-                    </div>
+                            {/* Save & Test buttons */}
+                            <div className="alerts__save-test">
+                                <Button
+                                    onClick={handleSaveNotificationConfig}
+                                    disabled={notificationLoading}
+                                    className="btn--lg"
+                                >
+                                    {notificationLoading ? "Saving..." : "Save Settings"}
+                                </Button>
+                                <Button
+                                    onClick={handleTestChannels}
+                                    disabled={testingChannels}
+                                    variant="success"
+                                    className="btn--lg"
+                                >
+                                    {testingChannels ? "Testing..." : "Test All Channels"}
+                                </Button>
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
         </div>
