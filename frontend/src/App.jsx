@@ -29,7 +29,7 @@ export default function App() {
                 <Route path="/" element={<Addresses />} />
                 <Route path="/addresses" element={<Addresses />} />
                 <Route path="/alerts" element={<Alerts />} />
-                <Route path="/history" element={<AlertHistory />} />
+                <Route path="/alertevents" element={<AlertHistory />} />
                 <Route path="/onboarding" element={<Onboarding />} />
                 <Route path="*" element={<Navigate to="/addresses" />} />
             </Routes>

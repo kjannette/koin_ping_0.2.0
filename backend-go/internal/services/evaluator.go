@@ -281,6 +281,10 @@ func (s *EvaluatorService) sendNotification(ctx context.Context, userID, message
 }
 
 func (s *EvaluatorService) buildMessage(rule domain.AlertRule, obs domain.ObservedTx) string {
+	if obs.IsTokenTransfer() {
+		return s.buildTokenMessage(rule, obs)
+	}
+
 	switch rule.Type {
 	case domain.AlertIncomingTx:
 		ethStr, _ := wei.FormatAsEth(obs.Value, 4)
@@ -303,5 +307,38 @@ func (s *EvaluatorService) buildMessage(rule domain.AlertRule, obs domain.Observ
 		return fmt.Sprintf("Balance dropped below threshold of %g ETH", threshold)
 	default:
 		return "Alert triggered"
+	}
+}
+
+const defaultTokenDecimals = 18
+
+func (s *EvaluatorService) buildTokenMessage(rule domain.AlertRule, obs domain.ObservedTx) string {
+	symbol := "tokens"
+	if obs.TokenSymbol != nil {
+		symbol = *obs.TokenSymbol
+	}
+
+	amount := "unknown"
+	if obs.TokenValue != nil {
+		decimals := defaultTokenDecimals
+		if obs.TokenDecimals != nil {
+			decimals = *obs.TokenDecimals
+		}
+		amount = wei.FormatTokenAmount(*obs.TokenValue, decimals)
+	}
+
+	switch rule.Type {
+	case domain.AlertIncomingTx:
+		return fmt.Sprintf("Incoming transfer: %s %s received", amount, symbol)
+	case domain.AlertOutgoingTx:
+		return fmt.Sprintf("Outgoing transfer: %s %s sent", amount, symbol)
+	case domain.AlertLargeTransfer:
+		threshold := float64(0)
+		if rule.Threshold != nil {
+			threshold = *rule.Threshold
+		}
+		return fmt.Sprintf("Large token transfer: %s %s (threshold: %g)", amount, symbol, threshold)
+	default:
+		return fmt.Sprintf("Token transfer: %s %s", amount, symbol)
 	}
 }

@@ -36,7 +36,7 @@ export default function AlertHistory() {
 
     return (
         <div style={{ maxWidth: "800px", margin: "0 auto", padding: "2rem" }}>
-            <h1>Recent Alerts</h1>
+            <h1>Recent Alert Events</h1>
 
             {alertEvents.length === 0 ? (
                 <p style={{ color: "#808080" }}>No alerts yet</p>

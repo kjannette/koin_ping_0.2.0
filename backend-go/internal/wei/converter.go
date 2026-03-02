@@ -98,3 +98,54 @@ func FormatAsEth(weiString string, decimals int) (string, error) {
 	}
 	return fmt.Sprintf("%.*f ETH", decimals, eth), nil
 }
+
+// FormatTokenAmount formats a raw token amount using the token's decimal places.
+// For example, 1000000 USDT (6 decimals) becomes "1".
+func FormatTokenAmount(rawValue string, tokenDecimals int) string {
+	if rawValue == "" || rawValue == "0" {
+		return "0"
+	}
+
+	n, ok := new(big.Int).SetString(rawValue, 10)
+	if !ok {
+		return "0"
+	}
+
+	divisor := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(tokenDecimals)), nil) //nolint:mnd
+	whole := new(big.Int).Div(n, divisor)
+	remainder := new(big.Int).Mod(n, divisor)
+
+	if remainder.Sign() == 0 {
+		return addThousandsSeparators(whole.String())
+	}
+
+	fracStr := fmt.Sprintf("%0*s", tokenDecimals, remainder.String())
+	fracStr = strings.TrimRight(fracStr, "0")
+	const maxDisplayDecimals = 4
+	if len(fracStr) > maxDisplayDecimals {
+		fracStr = fracStr[:maxDisplayDecimals]
+	}
+
+	return addThousandsSeparators(whole.String()) + "." + fracStr
+}
+
+func addThousandsSeparators(s string) string {
+	if len(s) <= 3 { //nolint:mnd
+		return s
+	}
+
+	var result strings.Builder
+	offset := len(s) % 3 //nolint:mnd
+	if offset > 0 {
+		result.WriteString(s[:offset])
+	}
+
+	for i := offset; i < len(s); i += 3 { //nolint:mnd
+		if result.Len() > 0 {
+			result.WriteByte(',')
+		}
+		result.WriteString(s[i : i+3]) //nolint:mnd
+	}
+
+	return result.String()
+}

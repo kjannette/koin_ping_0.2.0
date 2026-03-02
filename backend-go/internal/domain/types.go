@@ -110,6 +110,17 @@ type NormalizedTx struct {
 	Value          string  `json:"value"` // Wei as string for precision
 	BlockNumber    int     `json:"block_number"`    //nolint:tagliatelle
 	BlockTimestamp int64   `json:"block_timestamp"` //nolint:tagliatelle
+
+	// ERC-20 token transfer fields (nil for native ETH transfers)
+	TokenContract *string `json:"token_contract,omitempty"` //nolint:tagliatelle
+	TokenSymbol   *string `json:"token_symbol,omitempty"`   //nolint:tagliatelle
+	TokenDecimals *int    `json:"token_decimals,omitempty"` //nolint:tagliatelle
+	TokenValue    *string `json:"token_value,omitempty"`    //nolint:tagliatelle
+}
+
+// IsTokenTransfer returns true if this transaction represents an ERC-20 token transfer.
+func (tx NormalizedTx) IsTokenTransfer() bool {
+	return tx.TokenContract != nil
 }
 
 type Direction string
