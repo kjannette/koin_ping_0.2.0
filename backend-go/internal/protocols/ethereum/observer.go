@@ -12,4 +12,5 @@ type EthereumObserver interface {
 	GetLatestBlockNumber(ctx context.Context) (int, error)
 	GetBlockTransactions(ctx context.Context, blockNumber int) ([]domain.NormalizedTx, error)
 	GetBalance(ctx context.Context, address string) (string, error)
+	GetTokenTransfers(ctx context.Context, fromBlock, toBlock int, address string) ([]domain.NormalizedTx, error)
 }

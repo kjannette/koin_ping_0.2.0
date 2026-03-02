@@ -80,6 +80,15 @@ func (s *ObserverService) observeAddress(ctx context.Context, addr domain.Addres
 		}
 	}
 
+	tokenTxs, err := s.eth.GetTokenTransfers(ctx, startBlock, endBlock, addr.Address)
+	if err != nil {
+		log.Printf("Error fetching token transfers for %s: %v", addr.Address, err)
+	} else {
+		for _, tx := range tokenTxs {
+			observations = append(observations, createObservedTx(tx, addr))
+		}
+	}
+
 	if _, err := s.checkpoint.UpdateLastCheckedBlock(ctx, addr.ID, endBlock); err != nil {
 		return nil, err
 	}

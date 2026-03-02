@@ -242,6 +242,132 @@ func (j *JsonRpcEthereum) GetBalance(ctx context.Context, address string) (strin
 	return hexToDecimalString(hexBalance), nil
 }
 
+const erc20TransferTopic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+
+const minTransferTopics = 3
+
+type rpcLog struct {
+	Address     string   `json:"address"`
+	Topics      []string `json:"topics"`
+	Data        string   `json:"data"`
+	BlockNumber string   `json:"blockNumber"`
+	TxHash      string   `json:"transactionHash"`
+}
+
+// GetTokenTransfers fetches ERC-20 Transfer events for a given address
+// across a block range, covering both incoming and outgoing transfers.
+func (j *JsonRpcEthereum) GetTokenTransfers(ctx context.Context, fromBlock, toBlock int, address string) ([]domain.NormalizedTx, error) {
+	paddedAddr := padAddress(address)
+	hexFrom := fmt.Sprintf("0x%x", fromBlock)
+	hexTo := fmt.Sprintf("0x%x", toBlock)
+
+	incomingLogs, err := j.getTransferLogs(ctx, hexFrom, hexTo, "", paddedAddr)
+	if err != nil {
+		return nil, fmt.Errorf("fetch incoming token transfers: %w", err)
+	}
+
+	outgoingLogs, err := j.getTransferLogs(ctx, hexFrom, hexTo, paddedAddr, "")
+	if err != nil {
+		return nil, fmt.Errorf("fetch outgoing token transfers: %w", err)
+	}
+
+	seen := make(map[string]bool)
+	var txs []domain.NormalizedTx
+
+	for _, entry := range append(incomingLogs, outgoingLogs...) {
+		key := entry.TxHash + "|" + entry.Address + "|" + entry.Data
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+
+		tx, parseErr := parseTransferLog(entry)
+		if parseErr != nil {
+			log.Printf("Skipping unparseable transfer log in tx %s: %v", entry.TxHash, parseErr)
+			continue
+		}
+		txs = append(txs, tx)
+	}
+
+	return txs, nil
+}
+
+func (j *JsonRpcEthereum) getTransferLogs(ctx context.Context, fromBlock, toBlock, fromAddr, toAddr string) ([]rpcLog, error) {
+	topics := make([]interface{}, minTransferTopics)
+	topics[0] = erc20TransferTopic
+
+	if fromAddr != "" {
+		topics[1] = fromAddr
+	}
+	if toAddr != "" {
+		topics[2] = toAddr
+	}
+
+	filter := map[string]interface{}{
+		"fromBlock": fromBlock,
+		"toBlock":   toBlock,
+		"topics":    topics,
+	}
+
+	result, err := j.callRPC(ctx, "eth_getLogs", filter)
+	if err != nil {
+		return nil, err
+	}
+
+	var logs []rpcLog
+	if err := json.Unmarshal(result, &logs); err != nil {
+		return nil, fmt.Errorf("unmarshal logs: %w", err)
+	}
+
+	return logs, nil
+}
+
+func parseTransferLog(entry rpcLog) (domain.NormalizedTx, error) {
+	if len(entry.Topics) < minTransferTopics {
+		return domain.NormalizedTx{}, fmt.Errorf("transfer log has %d topics, expected >= 3", len(entry.Topics))
+	}
+
+	from := topicToAddress(entry.Topics[1])
+	to := topicToAddress(entry.Topics[2])
+	tokenValue := hexToDecimalString(entry.Data)
+	blockNumber, _ := hexToInt(entry.BlockNumber)
+
+	contractAddr := strings.ToLower(entry.Address)
+	tokenInfo, known := LookupToken(contractAddr)
+
+	tx := domain.NormalizedTx{
+		Hash:          entry.TxHash,
+		From:          from,
+		To:            &to,
+		Value:         "0",
+		BlockNumber:   blockNumber,
+		TokenContract: &contractAddr,
+		TokenValue:    &tokenValue,
+	}
+
+	if known {
+		tx.TokenSymbol = &tokenInfo.Symbol
+		tx.TokenDecimals = &tokenInfo.Decimals
+	}
+
+	return tx, nil
+}
+
+func padAddress(addr string) string {
+	clean := strings.TrimPrefix(strings.ToLower(addr), "0x")
+	const addressHexLen = 64
+	return "0x" + strings.Repeat("0", addressHexLen-len(clean)) + clean
+}
+
+func topicToAddress(topic string) string {
+	clean := strings.TrimPrefix(topic, "0x")
+	const ethAddrLen = 40
+	if len(clean) > ethAddrLen {
+		clean = clean[len(clean)-ethAddrLen:]
+	}
+	return "0x" + strings.ToLower(clean)
+}
+
 func hexToInt(hex string) (int, error) {
 	hex = strings.TrimPrefix(hex, "0x")
 	n, ok := new(big.Int).SetString(hex, 16)

@@ -4,7 +4,7 @@ import { useAuth } from "../contexts/AuthContext";
 const navLinks = [
   { to: "/addresses", label: "Addresses" },
   { to: "/alerts", label: "Configure Alerts" },
-  { to: "/history", label: "Alert History" },
+  { to: "/alertevents", label: "Alert Events" },
 ];
 
 export default function Navbar() {
