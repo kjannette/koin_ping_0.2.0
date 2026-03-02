@@ -5,7 +5,6 @@ A lightweight on-chain monitoring and alerting system designed to give users sit
 
 Koin Ping observes on-chain activity and notifies users when predefined conditions are met. It does not execute transactions, manage wallets, or speculate on prices.
 
-
 ## Getting Started
 
 ### Prerequisites
@@ -46,16 +45,16 @@ cd frontend && npm run dev
 ```
 
 The API listens on `http://localhost:3001` and the frontend on
-`http://localhost:3000` by default.
+`http://localhost:3000` by default for development.
 
 ## Rationale
 
-Crypto users who hold or actively monitor addresses need a lightweight, reliable
-way to know when on-chain activity occurs without polling block explorers
-manually. Koin Ping fills that gap: it watches a set of Ethereum addresses,
-evaluates configurable alert rules (incoming transactions, outgoing
-transactions, large transfers, balance thresholds), and notifies the user
-through Discord webhooks.
+Crypto users may actively monitor addresses with webhooks integrating popular 
+messaging platforms: Discord, Slack, Telegram.
+This lightweight, reliable framework makes instant awareness of on-chain 
+activity trivial, without polling block explorers manually. Koin Ping watches 
+addresses, evaluates configurable alert rules (incoming transactions, outgoing 
+transactions, "large" transfers, balance thresholds), and sends notifications.
 
 ## Design
 
@@ -132,7 +131,7 @@ To receive alerts via Telegram, you need to create a bot and get your chat ID.
 
 4. In the JSON response, find the `"chat"` object — the `"id"` field is your **Chat ID** (a numeric value).
 
-   > **Tip:** If the `"result"` array is empty, make sure you sent a message to your bot first, then refresh the page.
+   > **Tip:** If the `'result"` array is empty, make sure you sent a message to your bot first, then refresh the page.
 
 #### 3. Save in Koin Ping
 
@@ -153,3 +152,5 @@ MIT. See [LICENSE](LICENSE).
 ## Author
 
 Steven Jannette
+
+
