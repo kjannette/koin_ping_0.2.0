@@ -4,6 +4,7 @@ import { useAuth } from "../contexts/AuthContext";
 import "./Login.css";
 
 export default function Login() {
+  const [isVisible, setIsVisible] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -35,65 +36,70 @@ export default function Login() {
 
   return (
     <div className="login-page">
-      <div className="login-card">
+      <div
+        className="login-card"
+        onMouseEnter={() => setIsVisible(true)}
+      >
         <h1 className="login-heading">
           <span className="login-brand">Koin Ping</span> - Login
         </h1>
 
-        {error && (
-          <div className="login-error">
-            {error}
-          </div>
-        )}
+        <div style={{ visibility: isVisible ? 'visible' : 'hidden' }}>
+          {error && (
+            <div className="login-error">
+              {error}
+            </div>
+          )}
 
-        <form onSubmit={handleSubmit}>
-          <div className="login-field">
-            <label className="login-label">
-              Email
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+          <form onSubmit={handleSubmit}>
+            <div className="login-field">
+              <label className="login-label">
+                Email
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={loading}
+                className="login-input"
+                required
+              />
+            </div>
+
+            <div className="login-field-last">
+              <label className="login-label">
+                Password
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
+                className="login-input"
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
               disabled={loading}
-              className="login-input"
-              required
-            />
-          </div>
-
-          <div className="login-field-last">
-            <label className="login-label">
-              Password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={loading}
-              className="login-input"
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="login-button"
-          >
-            {loading ? "Logging in..." : "Log In"}
-          </button>
-        </form>
-
-        <div className="login-footer">
-          <p className="login-footer-text">
-            Don't have an account?{" "}
-            <Link
-              to="/signup"
-              className="login-signup-link"
+              className="login-button"
             >
-              Sign up here
-            </Link>
-          </p>
+              {loading ? "Logging in..." : "Log In"}
+            </button>
+          </form>
+
+          <div className="login-footer">
+            <p className="login-footer-text">
+              Don't have an account?{" "}
+              <Link
+                to="/signup"
+                className="login-signup-link"
+              >
+                Sign up here
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>
