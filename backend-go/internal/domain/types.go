@@ -1,9 +1,7 @@
-// Package domain defines core domain types shared across the application.
 package domain
 
 import "time"
 
-// Address represents a tracked Ethereum address.
 type Address struct {
 	ID        int       `json:"id"`
 	UserID    string    `json:"user_id"`    //nolint:tagliatelle
@@ -12,13 +10,10 @@ type Address struct {
 	CreatedAt time.Time `json:"created_at"` //nolint:tagliatelle
 }
 
-// AlertType identifies the kind of alert rule.
 type AlertType string
 
-// String implements fmt.Stringer.
 func (a AlertType) String() string { return string(a) }
 
-// Alert type constants define the supported alert triggers.
 const (
 	AlertIncomingTx    AlertType = "incoming_tx"
 	AlertOutgoingTx    AlertType = "outgoing_tx"
@@ -26,7 +21,6 @@ const (
 	AlertBalanceBelow  AlertType = "balance_below"
 )
 
-// ValidAlertTypes lists all alert types accepted by the API.
 var ValidAlertTypes = []AlertType{ //nolint:gochecknoglobals
 	AlertIncomingTx,
 	AlertOutgoingTx,
@@ -62,7 +56,6 @@ func IsThresholdRequired(t AlertType) bool {
 	return false
 }
 
-// AlertRule represents a user-defined alert rule for an address.
 type AlertRule struct {
 	ID        int       `json:"id"`
 	AddressID int       `json:"address_id"` //nolint:tagliatelle
@@ -72,7 +65,6 @@ type AlertRule struct {
 	CreatedAt time.Time `json:"created_at"` //nolint:tagliatelle
 }
 
-// AlertEvent represents a fired alert event stored for history.
 type AlertEvent struct {
 	ID           int       `json:"id"`
 	AlertRuleID  int       `json:"alert_rule_id"`   //nolint:tagliatelle
@@ -82,7 +74,6 @@ type AlertEvent struct {
 	Timestamp    time.Time `json:"timestamp"`
 }
 
-// AddressCheckpoint tracks the last block checked for an address.
 type AddressCheckpoint struct {
 	AddressID        int       `json:"address_id"`         //nolint:tagliatelle
 	LastCheckedBlock int       `json:"last_checked_block"` //nolint:tagliatelle
@@ -121,19 +112,16 @@ type NormalizedTx struct {
 	BlockTimestamp int64   `json:"block_timestamp"` //nolint:tagliatelle
 }
 
-// Direction indicates whether a transaction is incoming or outgoing.
 type Direction string
 
 // String implements fmt.Stringer.
 func (d Direction) String() string { return string(d) }
 
-// Direction constants indicate the flow of a transaction relative to a watched address.
 const (
 	DirectionIncoming Direction = "incoming"
 	DirectionOutgoing Direction = "outgoing"
 )
 
-// ObservedTx is a NormalizedTx enriched with address and direction context.
 type ObservedTx struct {
 	NormalizedTx
 	AddressID int       `json:"address_id"` //nolint:tagliatelle

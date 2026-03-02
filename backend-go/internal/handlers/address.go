@@ -15,17 +15,14 @@ import (
 
 var ethAddressRe = regexp.MustCompile(`^0x[a-fA-F0-9]{40}$`)
 
-// AddressHandler handles HTTP requests for address management.
 type AddressHandler struct {
 	addresses *models.AddressModel
 }
 
-// NewAddressHandler creates a new AddressHandler.
 func NewAddressHandler(addresses *models.AddressModel) *AddressHandler {
 	return &AddressHandler{addresses: addresses}
 }
 
-// Create handles POST requests to add a new tracked address.
 func (h *AddressHandler) Create(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r.Context())
 
@@ -92,7 +89,7 @@ func (h *AddressHandler) List(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, addresses)
 }
 
-// UpdateLabel handles PATCH requests to update an address label.
+//  handles PATCH requests to update an address label.
 func (h *AddressHandler) UpdateLabel(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r.Context())
 	addressID, ok := parseIntParam(r.PathValue("addressId"))
