@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import "./Login.css";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -33,120 +34,68 @@ export default function Login() {
   }
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        backgroundImage: "url(/ping.png)",
-        backgroundSize: "67%",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-      }}
-    >
-    <div
-      style={{
-        maxWidth: "400px",
-        margin: "0 auto",
-        padding: "2rem",
-        paddingTop: "8rem",
-        border: "1px solid #333",
-        borderRadius: "8px",
-        backgroundColor: "rgba(0, 0, 0, 0.75)",
-      }}
-    >
-      <h1 style={{ marginBottom: "2rem", textAlign: "center" }}>
-        Koin Ping - Login
-      </h1>
+    <div className="login-page">
+      <div className="login-card">
+        <h1 className="login-heading">
+          <span className="login-brand">Koin Ping</span> - Login
+        </h1>
 
-      {error && (
-        <div
-          style={{
-            padding: "0.75rem",
-            marginBottom: "1rem",
-            backgroundColor: "#ff000020",
-            border: "1px solid #ff0000",
-            borderRadius: "4px",
-            color: "#ff6666",
-          }}
-        >
-          {error}
-        </div>
-      )}
+        {error && (
+          <div className="login-error">
+            {error}
+          </div>
+        )}
 
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: "1rem" }}>
-          <label style={{ display: "block", marginBottom: "0.5rem" }}>
-            Email
-          </label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+        <form onSubmit={handleSubmit}>
+          <div className="login-field">
+            <label className="login-label">
+              Email
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={loading}
+              className="login-input"
+              required
+            />
+          </div>
+
+          <div className="login-field-last">
+            <label className="login-label">
+              Password
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={loading}
+              className="login-input"
+              required
+            />
+          </div>
+
+          <button
+            type="submit"
             disabled={loading}
-            style={{
-              width: "100%",
-              padding: "0.5rem",
-              fontSize: "1.2rem",
-              backgroundColor: "#242424",
-              border: "1px solid #444",
-              borderRadius: "4px",
-              color: "white",
-            }}
-            required
-          />
-        </div>
-
-        <div style={{ marginBottom: "1.5rem" }}>
-          <label style={{ display: "block", marginBottom: "0.5rem" }}>
-            Password
-          </label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            disabled={loading}
-            style={{
-              width: "100%",
-              padding: "0.5rem",
-              fontSize: "1.2rem",
-              backgroundColor: "#242424",
-              border: "1px solid #444",
-              borderRadius: "4px",
-              color: "white",
-            }}
-            required
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            width: "100%",
-            padding: "0.75rem",
-            fontSize: "1.2rem",
-            backgroundColor: loading ? "#333" : "#0066cc",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: loading ? "not-allowed" : "pointer",
-          }}
-        >
-          {loading ? "Logging in..." : "Log In"}
-        </button>
-      </form>
-
-      <div style={{ marginTop: "1.5rem", textAlign: "center" }}>
-        <p style={{ color: "#b3b3b3" }}>
-          Don't have an account?{" "}
-          <Link
-            to="/signup"
-            style={{ color: "#0066cc", textDecoration: "none" }}
+            className="login-button"
           >
-            Sign up here
-          </Link>
-        </p>
+            {loading ? "Logging in..." : "Log In"}
+          </button>
+        </form>
+
+        <div className="login-footer">
+          <p className="login-footer-text">
+            Don't have an account?{" "}
+            <Link
+              to="/signup"
+              className="login-signup-link"
+            >
+              Sign up here
+            </Link>
+          </p>
+        </div>
       </div>
-    </div>
     </div>
   );
 }
