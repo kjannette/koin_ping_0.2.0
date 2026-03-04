@@ -2,6 +2,15 @@ package domain
 
 import "time"
 
+type User struct {
+	ID          string    `json:"id"`
+	FirebaseUID string    `json:"-"`
+	Email       string    `json:"email"`
+	DisplayName *string   `json:"display_name"` //nolint:tagliatelle
+	CreatedAt   time.Time `json:"created_at"`   //nolint:tagliatelle
+	UpdatedAt   time.Time `json:"updated_at"`   //nolint:tagliatelle
+}
+
 type Address struct {
 	ID        int       `json:"id"`
 	UserID    string    `json:"user_id"`    //nolint:tagliatelle

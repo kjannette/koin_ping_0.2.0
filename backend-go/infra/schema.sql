@@ -4,15 +4,24 @@ DROP TABLE IF EXISTS alert_rules CASCADE;
 DROP TABLE IF EXISTS address_checkpoints CASCADE;
 DROP TABLE IF EXISTS user_notification_configs CASCADE;
 DROP TABLE IF EXISTS addresses CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  firebase_uid VARCHAR(128) NOT NULL UNIQUE,
+  email VARCHAR(255) NOT NULL,
+  display_name VARCHAR(255),
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
 
 CREATE TABLE addresses (
   id SERIAL PRIMARY KEY,
-  user_id VARCHAR(128) NOT NULL,       -- Firebase user ID (multi-user support)
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   address VARCHAR(42) NOT NULL,        -- Ethereum address format (0x + 40 hex chars)
   label VARCHAR(255),                  -- Optional human-readable label
   created_at TIMESTAMP DEFAULT NOW(),
-  
-  -- Unique users can track the same address independently
+
   UNIQUE(user_id, address)
 );
 
@@ -51,7 +60,7 @@ CREATE TABLE address_checkpoints (
 );
 
 CREATE TABLE user_notification_configs (
-  user_id VARCHAR(128) PRIMARY KEY,
+  user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
   discord_webhook_url TEXT,            -- Discord webhook URL (nullable)
   telegram_chat_id VARCHAR(128),       -- Telegram chat ID (nullable)
   telegram_bot_token VARCHAR(255),     -- Telegram bot token (nullable)
@@ -63,6 +72,7 @@ CREATE TABLE user_notification_configs (
 );
 
 -- Create indexes for common queries
+CREATE INDEX idx_users_firebase_uid ON users(firebase_uid);
 CREATE INDEX idx_addresses_user_id ON addresses(user_id);
 CREATE INDEX idx_alert_rules_address_id ON alert_rules(address_id);
 CREATE INDEX idx_alert_rules_enabled ON alert_rules(enabled);
