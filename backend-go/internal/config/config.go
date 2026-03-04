@@ -32,6 +32,11 @@ type Config struct {
 	ResendAPIKey         string
 	EmailFrom            string
 	DigestIntervalHours  int
+	StripeSecretKey      string
+	StripeWebhookSecret  string
+	StripePriceID        string
+	StripePublishableKey string
+	FrontendURL          string
 }
 
 // Load reads configuration from environment variables and returns a Config.
@@ -51,7 +56,12 @@ func Load() (*Config, error) {
 		NodeEnv:           getEnv("NODE_ENV", "development"),
 		ResendAPIKey:        os.Getenv("RESEND_API_KEY"),
 		EmailFrom:           getEnv("EMAIL_FROM", "Koin Ping <alerts@koinping.com>"),
-		DigestIntervalHours: getEnvInt("DIGEST_INTERVAL_HOURS", defaultDigestIntervalHours),
+		DigestIntervalHours:  getEnvInt("DIGEST_INTERVAL_HOURS", defaultDigestIntervalHours),
+		StripeSecretKey:      os.Getenv("STRIPE_SECRET_KEY"),
+		StripeWebhookSecret:  os.Getenv("STRIPE_WEBHOOK_SECRET"),
+		StripePriceID:        os.Getenv("STRIPE_PRICE_ID"),
+		StripePublishableKey: os.Getenv("STRIPE_PUBLISHABLE_KEY"),
+		FrontendURL:          getEnv("FRONTEND_URL", "http://localhost:3000"),
 	}
 
 	if cfg.PollIntervalMS < minPollIntervalMS {

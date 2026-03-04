@@ -1,11 +1,11 @@
 /**
  * Onboarding Wizard
  *
- * 5-step guided flow: Create Account -> Add Wallet -> Alert Rules -> Notifications -> Done
+ * 6-step guided flow: Create Account -> Subscribe -> Add Wallet -> Alert Rules -> Notifications -> Done
  */
 
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { createAddress, getAddresses } from "../api/addresses";
 import { createAlert } from "../api/alerts";
@@ -13,12 +13,14 @@ import {
     updateNotificationConfig,
     testNotificationChannels,
 } from "../api/notificationConfig";
+import { createCheckoutSession, getSubscriptionStatus } from "../api/stripe";
 import Input from "../components/Input";
 import Button from "../components/Button";
 import "./Onboarding.css";
 
 const STEPS = [
     "Create Account",
+    "Subscribe",
     "Add Wallet",
     "Alert Rules",
     "Notifications",
@@ -28,6 +30,7 @@ const STEPS = [
 export default function Onboarding() {
     const { currentUser, signup } = useAuth();
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
 
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
@@ -71,6 +74,20 @@ export default function Onboarding() {
             .catch(() => {});
     }, [currentUser, navigate]);
 
+    // Handle Stripe redirect back from checkout
+    useEffect(() => {
+        if (!currentUser) return;
+        const payment = searchParams.get("payment");
+        if (payment === "success") {
+            setSearchParams({}, { replace: true });
+            setStep(3);
+        } else if (payment === "cancelled") {
+            setSearchParams({}, { replace: true });
+            setStep(2);
+            setError("Payment was cancelled. Please subscribe to continue.");
+        }
+    }, [currentUser, searchParams, setSearchParams]);
+
     // ── Step handlers ─────────────────────────────────────────────────────────
 
     async function handleStep1() {
@@ -110,7 +127,24 @@ export default function Onboarding() {
         setStep(2);
     }
 
-    async function handleStep2() {
+    async function handleStep2Subscribe() {
+        setError("");
+        try {
+            setLoading(true);
+            const status = await getSubscriptionStatus();
+            if (status.subscription_status === "active" || status.subscription_status === "trialing") {
+                setStep(3);
+                return;
+            }
+            const { url } = await createCheckoutSession();
+            window.location.href = url;
+        } catch (err) {
+            setError(err.message);
+            setLoading(false);
+        }
+    }
+
+    async function handleStep3() {
         setError("");
         if (!data.walletAddress) {
             setError("Please enter a wallet address");
@@ -127,7 +161,7 @@ export default function Onboarding() {
                 label: data.walletLabel || undefined,
             });
             set("createdAddressId", created.id);
-            setStep(3);
+            setStep(4);
         } catch (err) {
             setError(err.message);
         } finally {
@@ -135,7 +169,7 @@ export default function Onboarding() {
         }
     }
 
-    async function handleStep3() {
+    async function handleStep4() {
         setError("");
         const rules = [];
         if (data.alertIncomingTx) rules.push({ type: "incoming_tx" });
@@ -156,7 +190,7 @@ export default function Onboarding() {
         }
 
         if (rules.length === 0) {
-            setStep(4);
+            setStep(5);
             return;
         }
 
@@ -168,7 +202,7 @@ export default function Onboarding() {
                 created.push(result);
             }
             set("alertsCreated", created);
-            setStep(4);
+            setStep(5);
         } catch (err) {
             setError(err.message);
         } finally {
@@ -176,12 +210,12 @@ export default function Onboarding() {
         }
     }
 
-    async function handleStep4() {
+    async function handleStep5() {
         setError("");
         const hasAny =
             data.discordWebhookUrl || data.slackWebhookUrl || data.notificationEmail;
         if (!hasAny) {
-            setStep(5);
+            setStep(6);
             return;
         }
         try {
@@ -193,7 +227,7 @@ export default function Onboarding() {
                 email: data.notificationEmail || undefined,
             });
             set("notificationConfigured", true);
-            setStep(5);
+            setStep(6);
         } catch (err) {
             setError(err.message);
         } finally {
@@ -299,6 +333,33 @@ export default function Onboarding() {
     function Step2() {
         return (
             <>
+                <h2 className="mb-sm">Subscribe to Koin Ping</h2>
+                <p className="onboarding__subtitle">
+                    A subscription is required to use Koin Ping.
+                </p>
+
+                <div className="subscribe-card">
+                    <div className="subscribe-card__price">
+                        <span className="subscribe-card__amount">$1.99</span>
+                        <span className="subscribe-card__period">/month</span>
+                    </div>
+                    <ul className="subscribe-card__features">
+                        <li>Unlimited wallet monitoring</li>
+                        <li>Real-time alert notifications</li>
+                        <li>Discord, Slack, Telegram & email alerts</li>
+                        <li>Email digest reports</li>
+                    </ul>
+                    <p className="subscribe-card__commitment">
+                        6-month minimum commitment
+                    </p>
+                </div>
+            </>
+        );
+    }
+
+    function Step3() {
+        return (
+            <>
                 <h2 className="mb-sm">Add a wallet address</h2>
                 <p className="onboarding__subtitle">
                     Enter the Ethereum address you want to monitor.
@@ -322,7 +383,7 @@ export default function Onboarding() {
         );
     }
 
-    function Step3() {
+    function Step4() {
         return (
             <>
                 <h2 className="mb-sm">Configure alert rules</h2>
@@ -382,7 +443,7 @@ export default function Onboarding() {
         );
     }
 
-    function Step4() {
+    function Step5() {
         return (
             <>
                 <h2 className="mb-sm">Set up notifications</h2>
@@ -447,7 +508,7 @@ export default function Onboarding() {
         );
     }
 
-    function Step5() {
+    function Step6() {
         const alertCount = data.alertsCreated.length;
         const hasNotif = data.notificationConfigured;
 
@@ -541,17 +602,18 @@ export default function Onboarding() {
     // ── Footer navigation ─────────────────────────────────────────────────────
 
     function Footer() {
-        if (step === 5) return null;
+        if (step === 6) return null;
 
-        const canSkip = step === 3 || step === 4;
-        const canBack = step > 1;
+        const canSkip = step === 4 || step === 5;
+        const canBack = step > 1 && step !== 2;
 
         async function handleNext() {
             setSkipWarning("");
             if (step === 1) await handleStep1();
-            else if (step === 2) await handleStep2();
+            else if (step === 2) await handleStep2Subscribe();
             else if (step === 3) await handleStep3();
             else if (step === 4) await handleStep4();
+            else if (step === 5) await handleStep5();
         }
 
         function handleSkip() {
@@ -565,6 +627,12 @@ export default function Onboarding() {
             setSkipWarning("");
             setStep((s) => s - 1);
         }
+
+        const nextLabel = step === 2
+            ? "Subscribe — $1.99/mo"
+            : step === 5
+              ? "Finish"
+              : "Next →";
 
         return (
             <div className="onboarding__footer">
@@ -595,7 +663,7 @@ export default function Onboarding() {
                         disabled={loading}
                         className="text-bold"
                     >
-                        {loading ? "Please wait..." : step === 4 ? "Finish" : "Next →"}
+                        {loading ? "Please wait..." : nextLabel}
                     </Button>
                 </div>
             </div>
@@ -610,6 +678,7 @@ export default function Onboarding() {
         3: <Step3 />,
         4: <Step4 />,
         5: <Step5 />,
+        6: <Step6 />,
     };
 
     return (

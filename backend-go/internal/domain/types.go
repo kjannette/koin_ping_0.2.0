@@ -3,12 +3,16 @@ package domain
 import "time"
 
 type User struct {
-	ID          string    `json:"id"`
-	FirebaseUID string    `json:"-"`
-	Email       string    `json:"email"`
-	DisplayName *string   `json:"display_name"` //nolint:tagliatelle
-	CreatedAt   time.Time `json:"created_at"`   //nolint:tagliatelle
-	UpdatedAt   time.Time `json:"updated_at"`   //nolint:tagliatelle
+	ID                    string     `json:"id"`
+	FirebaseUID           string     `json:"-"`
+	Email                 string     `json:"email"`
+	DisplayName           *string    `json:"display_name"`           //nolint:tagliatelle
+	StripeCustomerID      *string    `json:"-"`
+	StripeSubscriptionID  *string    `json:"-"`
+	SubscriptionStatus    string     `json:"subscription_status"`    //nolint:tagliatelle
+	SubscriptionCreatedAt *time.Time `json:"subscription_created_at,omitempty"` //nolint:tagliatelle
+	CreatedAt             time.Time  `json:"created_at"`             //nolint:tagliatelle
+	UpdatedAt             time.Time  `json:"updated_at"`             //nolint:tagliatelle
 }
 
 type Address struct {

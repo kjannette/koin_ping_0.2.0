@@ -61,8 +61,15 @@ func main() {
 	notifConfigHandler := handlers.NewNotificationConfigHandler(notifConfigModel, cfg)
 	emailDigestHandler := handlers.NewEmailDigestHandler(emailDigestSvc, notifConfigModel)
 	statusHandler := handlers.NewStatusHandler(checkpointModel)
+	stripeHandler := handlers.NewStripeHandler(userModel, cfg)
 
 	authenticate := middleware.Authenticate(userModel)
+	requireSub := middleware.RequireSubscription(userModel)
+
+	// authAndSub chains authentication + subscription check for protected routes.
+	authAndSub := func(h http.Handler) http.Handler {
+		return authenticate(requireSub(h))
+	}
 
 	mux := http.NewServeMux()
 	b := cfg.APIBasePath // e.g. "/v1"
@@ -71,45 +78,54 @@ func main() {
 	mux.HandleFunc("GET "+b+"/health", handlers.HealthCheck)
 	mux.HandleFunc("GET "+b+"/status", statusHandler.GetStatus)
 
-	// Authenticated routes — addresses
+	// Stripe webhook (public — called by Stripe, not authenticated)
+	mux.HandleFunc("POST "+b+"/stripe/webhook", stripeHandler.HandleWebhook)
+
+	// Stripe routes (auth required, NO subscription required)
+	mux.Handle("POST "+b+"/stripe/create-checkout-session",
+		authenticate(http.HandlerFunc(stripeHandler.CreateCheckoutSession)))
+	mux.Handle("GET "+b+"/stripe/subscription-status",
+		authenticate(http.HandlerFunc(stripeHandler.GetSubscriptionStatus)))
+
+	// Authenticated + subscribed routes — addresses
 	mux.Handle("POST "+b+"/addresses",
-		authenticate(http.HandlerFunc(addressHandler.Create)))
+		authAndSub(http.HandlerFunc(addressHandler.Create)))
 	mux.Handle("GET "+b+"/addresses",
-		authenticate(http.HandlerFunc(addressHandler.List)))
+		authAndSub(http.HandlerFunc(addressHandler.List)))
 	mux.Handle("DELETE "+b+"/addresses/{addressId}",
-		authenticate(http.HandlerFunc(addressHandler.Remove)))
+		authAndSub(http.HandlerFunc(addressHandler.Remove)))
 	mux.Handle("PATCH "+b+"/addresses/{addressId}",
-		authenticate(http.HandlerFunc(addressHandler.UpdateLabel)))
+		authAndSub(http.HandlerFunc(addressHandler.UpdateLabel)))
 
-	// Authenticated routes for alert rules
+	// Authenticated + subscribed routes — alert rules
 	mux.Handle("POST "+b+"/addresses/{addressId}/alerts",
-		authenticate(http.HandlerFunc(alertRuleHandler.Create)))
+		authAndSub(http.HandlerFunc(alertRuleHandler.Create)))
 	mux.Handle("GET "+b+"/addresses/{addressId}/alerts",
-		authenticate(http.HandlerFunc(alertRuleHandler.ListByAddress)))
+		authAndSub(http.HandlerFunc(alertRuleHandler.ListByAddress)))
 	mux.Handle("PATCH "+b+"/alerts/{alertId}",
-		authenticate(http.HandlerFunc(alertRuleHandler.UpdateStatus)))
+		authAndSub(http.HandlerFunc(alertRuleHandler.UpdateStatus)))
 	mux.Handle("DELETE "+b+"/alerts/{alertId}",
-		authenticate(http.HandlerFunc(alertRuleHandler.Remove)))
+		authAndSub(http.HandlerFunc(alertRuleHandler.Remove)))
 
-	// Authenticated routes — alert events
+	// Authenticated + subscribed routes — alert events
 	mux.Handle("GET "+b+"/alert-events",
-		authenticate(http.HandlerFunc(alertEventHandler.List)))
+		authAndSub(http.HandlerFunc(alertEventHandler.List)))
 
-	// Authenticated routes — notification config
+	// Authenticated + subscribed routes — notification config
 	mux.Handle("GET "+b+"/notification-config",
-		authenticate(http.HandlerFunc(notifConfigHandler.GetConfig)))
+		authAndSub(http.HandlerFunc(notifConfigHandler.GetConfig)))
 	mux.Handle("PUT "+b+"/notification-config",
-		authenticate(http.HandlerFunc(notifConfigHandler.UpdateConfig)))
+		authAndSub(http.HandlerFunc(notifConfigHandler.UpdateConfig)))
 	mux.Handle("DELETE "+b+"/notification-config",
-		authenticate(http.HandlerFunc(notifConfigHandler.DeleteConfig)))
+		authAndSub(http.HandlerFunc(notifConfigHandler.DeleteConfig)))
 	mux.Handle("POST "+b+"/notification-config/test",
-		authenticate(http.HandlerFunc(notifConfigHandler.TestChannels)))
+		authAndSub(http.HandlerFunc(notifConfigHandler.TestChannels)))
 
-	// Authenticated routes — email digest
+	// Authenticated + subscribed routes — email digest
 	mux.Handle("POST "+b+"/email/setup",
-		authenticate(http.HandlerFunc(emailDigestHandler.SetupEmail)))
+		authAndSub(http.HandlerFunc(emailDigestHandler.SetupEmail)))
 	mux.Handle("POST "+b+"/email/digest",
-		authenticate(http.HandlerFunc(emailDigestHandler.SendDigest)))
+		authAndSub(http.HandlerFunc(emailDigestHandler.SendDigest)))
 
 	handler := corsMiddleware(mux)
 
