@@ -19,6 +19,8 @@
 .login-heading {
   margin-bottom: 2rem;
   text-align: center;
+  position: relative;
+  top: -20px;
 }
 
 .login-brand {

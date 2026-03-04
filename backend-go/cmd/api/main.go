@@ -44,6 +44,7 @@ func main() {
 
 	defer database.Close()
 
+	userModel := models.NewUserModel(pool)
 	addressModel := models.NewAddressModel(pool)
 	alertRuleModel := models.NewAlertRuleModel(pool)
 	alertEventModel := models.NewAlertEventModel(pool)
@@ -61,6 +62,8 @@ func main() {
 	emailDigestHandler := handlers.NewEmailDigestHandler(emailDigestSvc, notifConfigModel)
 	statusHandler := handlers.NewStatusHandler(checkpointModel)
 
+	authenticate := middleware.Authenticate(userModel)
+
 	mux := http.NewServeMux()
 	b := cfg.APIBasePath // e.g. "/v1"
 
@@ -70,43 +73,43 @@ func main() {
 
 	// Authenticated routes — addresses
 	mux.Handle("POST "+b+"/addresses",
-		middleware.Authenticate(http.HandlerFunc(addressHandler.Create)))
+		authenticate(http.HandlerFunc(addressHandler.Create)))
 	mux.Handle("GET "+b+"/addresses",
-		middleware.Authenticate(http.HandlerFunc(addressHandler.List)))
+		authenticate(http.HandlerFunc(addressHandler.List)))
 	mux.Handle("DELETE "+b+"/addresses/{addressId}",
-		middleware.Authenticate(http.HandlerFunc(addressHandler.Remove)))
+		authenticate(http.HandlerFunc(addressHandler.Remove)))
 	mux.Handle("PATCH "+b+"/addresses/{addressId}",
-		middleware.Authenticate(http.HandlerFunc(addressHandler.UpdateLabel)))
+		authenticate(http.HandlerFunc(addressHandler.UpdateLabel)))
 
 	// Authenticated routes for alert rules
 	mux.Handle("POST "+b+"/addresses/{addressId}/alerts",
-		middleware.Authenticate(http.HandlerFunc(alertRuleHandler.Create)))
+		authenticate(http.HandlerFunc(alertRuleHandler.Create)))
 	mux.Handle("GET "+b+"/addresses/{addressId}/alerts",
-		middleware.Authenticate(http.HandlerFunc(alertRuleHandler.ListByAddress)))
+		authenticate(http.HandlerFunc(alertRuleHandler.ListByAddress)))
 	mux.Handle("PATCH "+b+"/alerts/{alertId}",
-		middleware.Authenticate(http.HandlerFunc(alertRuleHandler.UpdateStatus)))
+		authenticate(http.HandlerFunc(alertRuleHandler.UpdateStatus)))
 	mux.Handle("DELETE "+b+"/alerts/{alertId}",
-		middleware.Authenticate(http.HandlerFunc(alertRuleHandler.Remove)))
+		authenticate(http.HandlerFunc(alertRuleHandler.Remove)))
 
 	// Authenticated routes — alert events
 	mux.Handle("GET "+b+"/alert-events",
-		middleware.Authenticate(http.HandlerFunc(alertEventHandler.List)))
+		authenticate(http.HandlerFunc(alertEventHandler.List)))
 
 	// Authenticated routes — notification config
 	mux.Handle("GET "+b+"/notification-config",
-		middleware.Authenticate(http.HandlerFunc(notifConfigHandler.GetConfig)))
+		authenticate(http.HandlerFunc(notifConfigHandler.GetConfig)))
 	mux.Handle("PUT "+b+"/notification-config",
-		middleware.Authenticate(http.HandlerFunc(notifConfigHandler.UpdateConfig)))
+		authenticate(http.HandlerFunc(notifConfigHandler.UpdateConfig)))
 	mux.Handle("DELETE "+b+"/notification-config",
-		middleware.Authenticate(http.HandlerFunc(notifConfigHandler.DeleteConfig)))
+		authenticate(http.HandlerFunc(notifConfigHandler.DeleteConfig)))
 	mux.Handle("POST "+b+"/notification-config/test",
-		middleware.Authenticate(http.HandlerFunc(notifConfigHandler.TestChannels)))
+		authenticate(http.HandlerFunc(notifConfigHandler.TestChannels)))
 
 	// Authenticated routes — email digest
 	mux.Handle("POST "+b+"/email/setup",
-		middleware.Authenticate(http.HandlerFunc(emailDigestHandler.SetupEmail)))
+		authenticate(http.HandlerFunc(emailDigestHandler.SetupEmail)))
 	mux.Handle("POST "+b+"/email/digest",
-		middleware.Authenticate(http.HandlerFunc(emailDigestHandler.SendDigest)))
+		authenticate(http.HandlerFunc(emailDigestHandler.SendDigest)))
 
 	handler := corsMiddleware(mux)
 
