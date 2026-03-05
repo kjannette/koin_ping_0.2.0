@@ -28,8 +28,8 @@ make hooks
 cd frontend && npm install && cd ..
 
 # Copy and fill in environment variables
-cp backend-go/.env.example backend-go/.env
-# edit backend-go/.env with your DATABASE_URL, FIREBASE_PROJECT_ID, ETH_RPC_URL
+cp backend/.env.example backend/.env
+# edit backend/.env with your DATABASE_URL, FIREBASE_PROJECT_ID, ETH_RPC_URL
 
 # Run checks (requires golangci-lint)
 make check
@@ -38,7 +38,7 @@ make check
 make run
 
 # Start the poller (separate terminal)
-cd backend-go && go run ./cmd/poller
+cd backend && go run ./cmd/poller
 
 # Start the frontend dev server (separate terminal)
 cd frontend && npm run dev
@@ -63,7 +63,7 @@ frontend:
 
 ```
 koin_ping_0.2.0/
-├── backend-go/                # Go monorepo root
+├── backend/                # Go monorepo root
 │   ├── cmd/api/               # HTTP REST API server
 │   ├── cmd/poller/            # Blockchain polling daemon
 │   └── internal/
