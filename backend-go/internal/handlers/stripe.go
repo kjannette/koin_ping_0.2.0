@@ -84,6 +84,61 @@ func (h *StripeHandler) GetSubscriptionStatus(w http.ResponseWriter, r *http.Req
 	})
 }
 
+// VerifyCheckoutSession retrieves a completed checkout session from Stripe,
+// confirms payment, and activates the user's subscription in the database.
+// This is the primary activation path; webhooks serve as a backup.
+func (h *StripeHandler) VerifyCheckoutSession(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r.Context())
+
+	var body struct {
+		SessionID string `json:"session_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.SessionID == "" {
+		writeError(w, http.StatusBadRequest, "BAD_REQUEST", "Missing session_id")
+		return
+	}
+
+	s, err := checkoutsession.Get(body.SessionID, nil)
+	if err != nil {
+		log.Printf("Failed to retrieve checkout session %s: %v", body.SessionID, err)
+		writeError(w, http.StatusBadRequest, "STRIPE_ERROR", "Invalid checkout session")
+		return
+	}
+
+	if s.ClientReferenceID != userID {
+		writeError(w, http.StatusForbidden, "FORBIDDEN", "Session does not belong to this user")
+		return
+	}
+
+	if s.PaymentStatus != stripe.CheckoutSessionPaymentStatusPaid {
+		writeError(w, http.StatusBadRequest, "PAYMENT_INCOMPLETE", "Payment has not been completed")
+		return
+	}
+
+	customerID := ""
+	if s.Customer != nil {
+		customerID = s.Customer.ID
+	}
+	subscriptionID := ""
+	if s.Subscription != nil {
+		subscriptionID = s.Subscription.ID
+	}
+
+	if customerID != "" {
+		if err := h.users.UpdateStripeCustomer(r.Context(), userID, customerID); err != nil {
+			log.Printf("VerifyCheckout: failed to save customer ID: %v", err)
+		}
+	}
+	if subscriptionID != "" && customerID != "" {
+		if err := h.users.ActivateSubscription(r.Context(), customerID, subscriptionID, "active"); err != nil {
+			log.Printf("VerifyCheckout: failed to activate subscription: %v", err)
+		}
+	}
+
+	log.Printf("Checkout verified for user %s, customer %s, subscription %s", userID, customerID, subscriptionID)
+	writeJSON(w, http.StatusOK, map[string]string{"subscription_status": "active"})
+}
+
 // HandleWebhook processes incoming Stripe webhook events.
 // This endpoint must NOT require authentication (Stripe calls it directly).
 func (h *StripeHandler) HandleWebhook(w http.ResponseWriter, r *http.Request) {
