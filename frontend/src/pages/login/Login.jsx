@@ -87,6 +87,11 @@ export default function Login() {
           </div>
         </div>
       </div>
+
+      <p className="login-tagline login-card-fadein">
+        A lightweight, on-chain monitoring system giving users real-time
+        situational awareness over blockchain addresses.
+      </p>
     </div>
   );
 }
