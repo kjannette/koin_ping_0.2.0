@@ -16,14 +16,16 @@ import (
 )
 
 const (
-	rpcTimeoutMS    = 30000
-	rpcMaxRetries   = 3
-	rpcRetryBaseMS  = 2000
+	rpcTimeoutMS      = 30000
+	rpcMaxRetries     = 3
+	rpcRetryBaseMS    = 2000
+	rpcMinIntervalMS  = 1000
 )
 
 type JsonRpcEthereum struct {
-	rpcURL string
-	client *http.Client
+	rpcURL     string
+	client     *http.Client
+	lastCallAt time.Time
 }
 
 func NewJsonRpcEthereum(rpcURL string) (*JsonRpcEthereum, error) {
@@ -58,6 +60,8 @@ type rpcError struct {
 }
 
 func (j *JsonRpcEthereum) callRPC(ctx context.Context, method string, params ...interface{}) (json.RawMessage, error) {
+	j.throttle(ctx)
+
 	if params == nil {
 		params = []interface{}{}
 	}
@@ -72,7 +76,25 @@ func (j *JsonRpcEthereum) callRPC(ctx context.Context, method string, params ...
 		return nil, fmt.Errorf("marshal RPC request: %w", err)
 	}
 
-	return j.callWithRetry(ctx, method, body)
+	result, callErr := j.callWithRetry(ctx, method, body)
+	j.lastCallAt = time.Now()
+
+	return result, callErr
+}
+
+func (j *JsonRpcEthereum) throttle(ctx context.Context) {
+	if j.lastCallAt.IsZero() {
+		return
+	}
+	minInterval := time.Duration(rpcMinIntervalMS) * time.Millisecond
+	elapsed := time.Since(j.lastCallAt)
+	if elapsed >= minInterval {
+		return
+	}
+	select {
+	case <-ctx.Done():
+	case <-time.After(minInterval - elapsed):
+	}
 }
 
 // callWithRetry executes a JSON-RPC POST with exponential backoff on transient errors.
