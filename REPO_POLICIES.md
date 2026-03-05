@@ -6,12 +6,12 @@ last_modified: 2026-02-22
 This document covers repository structure, tooling, and workflow standards. Code
 style conventions are in separate documents:
 
-- [Code Styleguide](https://git.eeqj.de/sneak/prompts/raw/branch/main/prompts/CODE_STYLEGUIDE.md)
+- [Code Styleguide](<link>)
   (general, bash, Docker)
-- [Go](https://git.eeqj.de/sneak/prompts/raw/branch/main/prompts/CODE_STYLEGUIDE_GO.md)
-- [JavaScript](https://git.eeqj.de/sneak/prompts/raw/branch/main/prompts/CODE_STYLEGUIDE_JS.md)
-- [Python](https://git.eeqj.de/sneak/prompts/raw/branch/main/prompts/CODE_STYLEGUIDE_PYTHON.md)
-- [Go HTTP Server Conventions](https://git.eeqj.de/sneak/prompts/raw/branch/main/prompts/GO_HTTP_SERVER_CONVENTIONS.md)
+- [Go](<link>)
+- [JavaScript](<link>)
+- [Python](<link>)
+- [Go HTTP Server Conventions](<link>)
 
 ---
 
@@ -37,7 +37,7 @@ style conventions are in separate documents:
   `make test`, `make lint`, `make fmt` (writes), `make fmt-check` (read-only),
   `make check` (prereqs: `test`, `lint`, `fmt-check`), `make docker`, and
   `make hooks` (installs pre-commit hook). A model Makefile is at
-  `https://git.eeqj.de/sneak/prompts/raw/branch/main/Makefile`.
+  `(<link>)`.
 
 - Always use Makefile targets (`make fmt`, `make test`, `make lint`, etc.)
   instead of invoking the underlying tools directly. The Makefile is the single
@@ -95,7 +95,7 @@ style conventions are in separate documents:
 - `.gitignore` should be comprehensive from the start: OS files (`.DS_Store`),
   editor files (`.swp`, `*~`), language build artifacts, and `node_modules/`.
   Fetch the standard `.gitignore` from
-  `https://git.eeqj.de/sneak/prompts/raw/branch/main/.gitignore` when setting up
+  `(<link>) when setting up
   a new repo.
 
 - Never use `git add -A` or `git add .`. Always stage files explicitly by name.
@@ -107,7 +107,7 @@ style conventions are in separate documents:
 
 - `.golangci.yml` is standardized and must _NEVER_ be modified by an agent, only
   manually by the user. Fetch from
-  `https://git.eeqj.de/sneak/prompts/raw/branch/main/.golangci.yml`.
+  `(<link>)`.
 
 - When pinning images or packages by hash, add a comment above the reference
   with the version and date (YYYY-MM-DD).
@@ -124,7 +124,7 @@ style conventions are in separate documents:
 - `README.md` is the primary documentation. Required sections:
     - **Description**: First line must include the project name, purpose,
       category (web server, SPA, CLI tool, etc.), license, and author. Example:
-      "µPaaS is an MIT-licensed Go web application by @sneak that receives
+      "µPaaS is an MIT-licensed Go web application by @sjdev that receives
       git-frontend webhooks and deploys applications via Docker in realtime."
     - **Getting Started**: Copy-pasteable install/usage code block.
     - **Rationale**: Why does this exist?
@@ -134,12 +134,11 @@ style conventions are in separate documents:
       left off.
     - **License**: MIT, GPL, or WTFPL. Ask the user for new projects. Include a
       `LICENSE` file in the repo root and a License section in the README.
-    - **Author**: [@sneak](https://sneak.berlin).
+    - **Author**: [@sjdev](https://sjdev.co).
 
 - First commit of a new repo should contain only `README.md`.
 
-- Go module root: `sneak.berlin/go/<name>`. Always run `go mod tidy` before
-  committing.
+- Always run `go mod tidy` before committing.
 
 - Use SemVer.
 
@@ -175,7 +174,7 @@ style conventions are in separate documents:
 
 - When setting up a new repo, files from the `prompts` repo may be used as
   templates. Fetch them from
-  `https://git.eeqj.de/sneak/prompts/raw/branch/main/<path>`.
+  `(<link>)<path>`.
 
 - New repos must contain at minimum:
     - `README.md`, `.git`, `.gitignore`, `.editorconfig`

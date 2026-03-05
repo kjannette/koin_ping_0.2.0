@@ -62,6 +62,7 @@ func main() {
 	emailDigestHandler := handlers.NewEmailDigestHandler(emailDigestSvc, notifConfigModel)
 	statusHandler := handlers.NewStatusHandler(checkpointModel)
 	stripeHandler := handlers.NewStripeHandler(userModel, cfg)
+	accountHandler := handlers.NewAccountHandler(userModel, cfg)
 
 	authenticate := middleware.Authenticate(userModel)
 	requireSub := middleware.RequireSubscription(userModel)
@@ -88,6 +89,12 @@ func main() {
 		authenticate(http.HandlerFunc(stripeHandler.GetSubscriptionStatus)))
 	mux.Handle("POST "+b+"/stripe/verify-checkout",
 		authenticate(http.HandlerFunc(stripeHandler.VerifyCheckoutSession)))
+	mux.Handle("POST "+b+"/stripe/create-portal-session",
+		authenticate(http.HandlerFunc(stripeHandler.CreatePortalSession)))
+
+	// Account route (auth required, NO subscription required)
+	mux.Handle("GET "+b+"/user/account",
+		authenticate(http.HandlerFunc(accountHandler.GetAccount)))
 
 	// Authenticated + subscribed routes — addresses
 	mux.Handle("POST "+b+"/addresses",

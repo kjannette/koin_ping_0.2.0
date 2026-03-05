@@ -7,6 +7,7 @@ import Subscribe from "./pages/subscribe/subscribe";
 import Addresses from "./pages/addresses/Addresses";
 import Alerts from "./pages/alerts/Alerts";
 import AlertHistory from "./pages/alertHistory/AlertHistory";
+import Account from "./pages/user_account/Account";
 
 export default function App() {
   const { currentUser } = useAuth();
@@ -30,6 +31,7 @@ export default function App() {
         <Route path="/addresses" element={<Addresses />} />
         <Route path="/alerts" element={<Alerts />} />
         <Route path="/alertevents" element={<AlertHistory />} />
+        <Route path="/account" element={<Account />} />
         <Route path="/subscribe" element={<Subscribe />} />
         <Route path="*" element={<Navigate to="/addresses" />} />
       </Routes>
