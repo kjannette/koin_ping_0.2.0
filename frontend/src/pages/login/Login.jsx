@@ -36,6 +36,16 @@ export default function Login() {
 
   return (
     <div className="login-page">
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="login-bg-video"
+      >
+        <source src="/koin_spin.mp4" type="video/mp4" />
+      </video>
+
       <div className="login-card" onMouseEnter={() => setIsVisible(true)}>
         <h1 className="login-heading">
           <span className="login-brand">Koin Ping</span> - Login
