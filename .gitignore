@@ -21,7 +21,7 @@ node_modules/
 *.key
 
 # Go build artifacts
-backend-go/bin/
+backend/bin/
 *.exe
 *.exe~
 *.dll

@@ -2,7 +2,7 @@
         test-go test-js lint-go lint-js fmt-go fmt-js fmt-check-go fmt-check-js \
         build-go build-js
 
-GODIR    := backend-go
+GODIR    := backend
 JSDIR    := frontend
 PRETTIER := $(JSDIR)/node_modules/.bin/prettier
 
