@@ -79,6 +79,18 @@
   animation-delay: 3s;
 }
 
+.login-tagline {
+  position: relative;
+  z-index: 1;
+  max-width: 630px;
+  margin: 5rem auto 0;
+  padding-left: 2rem;
+  font-style: italic;
+  color: #FFFFFF;
+  font-size: 1.5rem;
+  line-height: 1.5;
+}
+
 .login-interactive-fadein {
   opacity: 0;
   animation: fadeIn 2s ease-in-out forwards;
