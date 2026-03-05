@@ -35,7 +35,7 @@ export default function Navbar() {
       </div>
 
       <div className="flex flex--center gap-lg">
-        <span className="navbar__user">{currentUser.email}</span>
+        <Link to="/account" className="navbar__user navbar__user-link">{currentUser.email}</Link>
         <button onClick={logout} className="navbar__logout">
           Logout
         </button>

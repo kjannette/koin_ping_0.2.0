@@ -1,0 +1,77 @@
+.account-page h1 {
+  font-size: 2rem;
+  font-weight: 200;
+}
+
+.account__section-title {
+  font-size: 1.4rem;
+  font-weight: 400;
+  margin-bottom: 1.25rem;
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-border-light);
+  padding-bottom: 0.5rem;
+}
+
+.account__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.account__row--last {
+  border-bottom: none;
+}
+
+.account__label {
+  color: var(--color-text-muted);
+  font-size: 1.1rem;
+}
+
+.account__value {
+  color: var(--color-text);
+  font-size: 1.1rem;
+  text-align: right;
+}
+
+.account__uuid {
+  font-size: 0.85rem;
+  color: var(--color-text-dimmed);
+  word-break: break-all;
+  max-width: 60%;
+}
+
+.account__status {
+  font-weight: 600;
+}
+
+.account__status--active {
+  color: var(--color-success-text);
+}
+
+.account__status--canceled {
+  color: var(--color-danger);
+}
+
+.account__status--canceling {
+  color: var(--color-warning);
+}
+
+.account__status--past_due {
+  color: var(--color-error);
+}
+
+.account__portal-section {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.account__portal-hint {
+  margin-top: 0.5rem;
+}
+
+.account__password-form {
+  max-width: 400px;
+}

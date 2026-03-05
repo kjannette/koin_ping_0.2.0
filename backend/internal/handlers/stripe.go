@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/stripe/stripe-go/v82"
+	portalsession "github.com/stripe/stripe-go/v82/billingportal/session"
 	checkoutsession "github.com/stripe/stripe-go/v82/checkout/session"
 	"github.com/stripe/stripe-go/v82/webhook"
 
@@ -137,6 +138,38 @@ func (h *StripeHandler) VerifyCheckoutSession(w http.ResponseWriter, r *http.Req
 
 	log.Printf("Checkout verified for user %s, customer %s, subscription %s", userID, customerID, subscriptionID)
 	writeJSON(w, http.StatusOK, map[string]string{"subscription_status": "active"})
+}
+
+// CreatePortalSession creates a Stripe Billing Portal session so the user can
+// manage their subscription (cancel, update payment method, view invoices).
+func (h *StripeHandler) CreatePortalSession(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r.Context())
+
+	user, err := h.users.GetByID(r.Context(), userID)
+	if err != nil || user == nil {
+		log.Printf("Portal: failed to get user %s: %v", userID, err)
+		writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to load user")
+		return
+	}
+
+	if user.StripeCustomerID == nil || *user.StripeCustomerID == "" {
+		writeError(w, http.StatusBadRequest, "NO_CUSTOMER", "No Stripe customer on file")
+		return
+	}
+
+	params := &stripe.BillingPortalSessionParams{
+		Customer:  user.StripeCustomerID,
+		ReturnURL: stripe.String(h.cfg.FrontendURL + "/account"),
+	}
+
+	s, err := portalsession.New(params)
+	if err != nil {
+		log.Printf("Portal: failed to create portal session: %v", err)
+		writeError(w, http.StatusInternalServerError, "STRIPE_ERROR", "Failed to create portal session")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"url": s.URL})
 }
 
 // HandleWebhook processes incoming Stripe webhook events.
