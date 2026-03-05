@@ -5,7 +5,6 @@ import Input from "../../components/Input";
 import "./Login.css";
 
 export default function Login() {
-  const [isVisible, setIsVisible] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -46,12 +45,12 @@ export default function Login() {
         <source src="/koin_spin.mp4" type="video/mp4" />
       </video>
 
-      <div className="login-card" onMouseEnter={() => setIsVisible(true)}>
+      <div className="login-card login-card-fadein">
         <h1 className="login-heading">
           <span className="login-brand">Koin Ping</span> - Login
         </h1>
 
-        <div className={isVisible ? "login-form-visible" : "login-form-hidden"}>
+        <div className="login-interactive-fadein">
           {error && <div className="alert alert--error">{error}</div>}
 
           <form onSubmit={handleSubmit}>
