@@ -19,7 +19,7 @@
   z-index: 0;
   filter: grayscale(85%);
   -webkit-filter: grayscale(85%);
-  opacity: 0.06;
+  opacity: 0.05;
 }
 
 .login-card {
@@ -67,6 +67,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
