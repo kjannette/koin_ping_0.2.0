@@ -8,6 +8,19 @@
   border-bottom: 1px solid var(--color-border-light);
 }
 
+/* ── Left Group: Brand + Links ───────────────────────────── */
+
+.navbar__left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.navbar__brand-group {
+  display: flex;
+  align-items: center;
+}
+
 .navbar__brand {
   font-weight: 700;
   font-size: 1.4rem;
@@ -38,6 +51,14 @@
   background-color: var(--color-bg-card);
 }
 
+/* ── Right Group: Email + Logout + Hamburger ─────────────── */
+
+.navbar__right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
 .navbar__user {
   font-size: 1.275rem;
   color: #777;
@@ -53,6 +74,10 @@
   color: var(--color-primary-hover);
 }
 
+.navbar__user-link--mobile {
+  display: none;
+}
+
 .navbar__logout {
   padding: 0.4rem 1rem;
   font-size: 1.275rem;
@@ -65,59 +90,78 @@
   transition: all 0.15s ease;
 }
 
-/* ── Navbar Responsive ───────────────────────────────────── */
+/* ── Hamburger Icon (hidden on desktop) ──────────────────── */
+
+.navbar__hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.navbar__hamburger-bar {
+  display: block;
+  width: 28px;
+  height: 3px;
+  background-color: var(--color-brand);
+  border-radius: 2px;
+}
+
+/* ── Responsive: Tablet & below (≤ 768px) ────────────────── */
 
 @media (max-width: 768px) {
   .navbar {
-    flex-wrap: wrap;
-    gap: 0.75rem;
     padding: 0.75rem 1rem;
   }
 
-  .navbar__brand {
-    margin-right: 1rem;
-    font-size: 1.25rem;
-  }
-
-  .navbar__links {
-    flex-wrap: wrap;
-    gap: 0.2rem;
-  }
-
-  .navbar__link {
-    padding: 0.35rem 0.75rem;
-    font-size: 1.2rem;
-  }
-
-  .navbar__user {
-    font-size: 1.1rem;
-  }
-
-  .navbar__logout {
-    padding: 0.3rem 0.75rem;
-    font-size: 1.1rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .navbar {
+  .navbar__brand-group {
     flex-direction: column;
     align-items: flex-start;
-    padding: 0.75rem;
-    gap: 0.5rem;
-  }
-
-  .navbar__links {
-    width: 100%;
-    gap: 0.15rem;
-  }
-
-  .navbar__link {
-    padding: 0.3rem 0.6rem;
-    font-size: 1.05rem;
   }
 
   .navbar__brand {
     margin-right: 0;
+    font-size: 1.25rem;
+  }
+
+  .navbar__links {
+    display: none;
+  }
+
+  .navbar__user-link--mobile {
+    display: block;
+    font-size: 0.95rem;
+  }
+
+  .navbar__user-link--desktop {
+    display: none;
+  }
+
+  .navbar__logout {
+    display: none;
+  }
+
+  .navbar__hamburger {
+    display: flex;
+  }
+}
+
+/* ── Responsive: Mobile (≤ 480px) ────────────────────────── */
+
+@media (max-width: 480px) {
+  .navbar {
+    padding: 0.75rem;
+  }
+
+  .navbar__brand {
+    font-size: 1.15rem;
+  }
+
+  .navbar__user-link--mobile {
+    font-size: 0.85rem;
   }
 }
