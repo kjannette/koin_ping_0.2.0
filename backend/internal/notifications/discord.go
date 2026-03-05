@@ -101,8 +101,12 @@ func SendDiscordNotification(webhookURL, message string, meta AlertMetadata) (bo
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		err := fmt.Errorf("discord webhook failed: HTTP %d", resp.StatusCode)
 		log.Printf("Discord webhook failed: HTTP %d", resp.StatusCode)
-		return false, fmt.Errorf("discord webhook failed: HTTP %d", resp.StatusCode)
+		if isPermanentStatusCode(resp.StatusCode) {
+			return false, &PermanentError{Err: err}
+		}
+		return false, err
 	}
 
 	return true, nil
