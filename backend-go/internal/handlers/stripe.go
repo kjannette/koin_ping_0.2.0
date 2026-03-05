@@ -46,8 +46,8 @@ func (h *StripeHandler) CreateCheckoutSession(w http.ResponseWriter, r *http.Req
 				Quantity: stripe.Int64(1),
 			},
 		},
-		SuccessURL:        stripe.String(h.cfg.FrontendURL + "/onboarding?payment=success&session_id={CHECKOUT_SESSION_ID}"),
-		CancelURL:         stripe.String(h.cfg.FrontendURL + "/onboarding?payment=cancelled"),
+		SuccessURL:        stripe.String(h.cfg.FrontendURL + "/subscribe?payment=success&session_id={CHECKOUT_SESSION_ID}"),
+		CancelURL:         stripe.String(h.cfg.FrontendURL + "/subscribe?payment=cancelled"),
 		ClientReferenceID: stripe.String(userID),
 		CustomerEmail:     stripe.String(user.Email),
 	}

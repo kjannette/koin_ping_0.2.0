@@ -1,7 +1,9 @@
 /**
- * Onboarding Wizard
+ * Subscribe / Onboarding Wizard
  *
- * 6-step guided flow: Create Account -> Subscribe -> Add Wallet -> Alert Rules -> Notifications -> Done
+ * 5-step guided flow: Create Account -> Add Wallet -> Alert Rules -> Notifications -> Done
+ * After account creation, user is redirected to Stripe Checkout for payment.
+ * On successful payment, they return here at step 2 (Add Wallet).
  */
 
 import { useState, useEffect } from "react";
@@ -20,7 +22,6 @@ import "./Onboarding.css";
 
 const STEPS = [
     "Create Account",
-    "Subscribe",
     "Add Wallet",
     "Alert Rules",
     "Notifications",
@@ -80,11 +81,11 @@ export default function Onboarding() {
         const payment = searchParams.get("payment");
         if (payment === "success") {
             setSearchParams({}, { replace: true });
-            setStep(3);
+            setStep(2);
         } else if (payment === "cancelled") {
             setSearchParams({}, { replace: true });
-            setStep(2);
-            setError("Payment was cancelled. Please subscribe to continue.");
+            setStep(1);
+            setError("Payment was cancelled. Please try again.");
         }
     }, [currentUser, searchParams, setSearchParams]);
 
@@ -104,47 +105,33 @@ export default function Onboarding() {
             setError("Password must be at least 6 characters");
             return;
         }
-        if (!currentUser) {
-            try {
-                setLoading(true);
-                await signup(data.email, data.password);
-            } catch (err) {
-                if (err.code === "auth/email-already-in-use") {
-                    setError("Email already in use. Try logging in instead.");
-                } else if (err.code === "auth/invalid-email") {
-                    setError("Invalid email address");
-                } else if (err.code === "auth/weak-password") {
-                    setError("Password is too weak");
-                } else {
-                    setError("Failed to create account: " + err.message);
-                }
-                setLoading(false);
-                return;
-            } finally {
-                setLoading(false);
-            }
-        }
-        setStep(2);
-    }
-
-    async function handleStep2Subscribe() {
-        setError("");
         try {
             setLoading(true);
+            if (!currentUser) {
+                await signup(data.email, data.password);
+            }
             const status = await getSubscriptionStatus();
             if (status.subscription_status === "active" || status.subscription_status === "trialing") {
-                setStep(3);
+                setStep(2);
                 return;
             }
             const { url } = await createCheckoutSession();
             window.location.href = url;
         } catch (err) {
-            setError(err.message);
+            if (err.code === "auth/email-already-in-use") {
+                setError("Email already in use. Try logging in instead.");
+            } else if (err.code === "auth/invalid-email") {
+                setError("Invalid email address");
+            } else if (err.code === "auth/weak-password") {
+                setError("Password is too weak");
+            } else {
+                setError("Failed to create account: " + err.message);
+            }
             setLoading(false);
         }
     }
 
-    async function handleStep3() {
+    async function handleStep2() {
         setError("");
         if (!data.walletAddress) {
             setError("Please enter a wallet address");
@@ -161,7 +148,7 @@ export default function Onboarding() {
                 label: data.walletLabel || undefined,
             });
             set("createdAddressId", created.id);
-            setStep(4);
+            setStep(3);
         } catch (err) {
             setError(err.message);
         } finally {
@@ -169,7 +156,7 @@ export default function Onboarding() {
         }
     }
 
-    async function handleStep4() {
+    async function handleStep3() {
         setError("");
         const rules = [];
         if (data.alertIncomingTx) rules.push({ type: "incoming_tx" });
@@ -190,7 +177,7 @@ export default function Onboarding() {
         }
 
         if (rules.length === 0) {
-            setStep(5);
+            setStep(4);
             return;
         }
 
@@ -202,7 +189,7 @@ export default function Onboarding() {
                 created.push(result);
             }
             set("alertsCreated", created);
-            setStep(5);
+            setStep(4);
         } catch (err) {
             setError(err.message);
         } finally {
@@ -210,12 +197,12 @@ export default function Onboarding() {
         }
     }
 
-    async function handleStep5() {
+    async function handleStep4() {
         setError("");
         const hasAny =
             data.discordWebhookUrl || data.slackWebhookUrl || data.notificationEmail;
         if (!hasAny) {
-            setStep(6);
+            setStep(5);
             return;
         }
         try {
@@ -227,7 +214,7 @@ export default function Onboarding() {
                 email: data.notificationEmail || undefined,
             });
             set("notificationConfigured", true);
-            setStep(6);
+            setStep(5);
         } catch (err) {
             setError(err.message);
         } finally {
@@ -333,33 +320,6 @@ export default function Onboarding() {
     function Step2() {
         return (
             <>
-                <h2 className="mb-sm">Subscribe to Koin Ping</h2>
-                <p className="onboarding__subtitle">
-                    A subscription is required to use Koin Ping.
-                </p>
-
-                <div className="subscribe-card">
-                    <div className="subscribe-card__price">
-                        <span className="subscribe-card__amount">$1.99</span>
-                        <span className="subscribe-card__period">/month</span>
-                    </div>
-                    <ul className="subscribe-card__features">
-                        <li>Unlimited wallet monitoring</li>
-                        <li>Real-time alert notifications</li>
-                        <li>Discord, Slack, Telegram & email alerts</li>
-                        <li>Email digest reports</li>
-                    </ul>
-                    <p className="subscribe-card__commitment">
-                        6-month minimum commitment
-                    </p>
-                </div>
-            </>
-        );
-    }
-
-    function Step3() {
-        return (
-            <>
                 <h2 className="mb-sm">Add a wallet address</h2>
                 <p className="onboarding__subtitle">
                     Enter the Ethereum address you want to monitor.
@@ -383,7 +343,7 @@ export default function Onboarding() {
         );
     }
 
-    function Step4() {
+    function Step3() {
         return (
             <>
                 <h2 className="mb-sm">Configure alert rules</h2>
@@ -443,7 +403,7 @@ export default function Onboarding() {
         );
     }
 
-    function Step5() {
+    function Step4() {
         return (
             <>
                 <h2 className="mb-sm">Set up notifications</h2>
@@ -508,7 +468,7 @@ export default function Onboarding() {
         );
     }
 
-    function Step6() {
+    function Step5() {
         const alertCount = data.alertsCreated.length;
         const hasNotif = data.notificationConfigured;
 
@@ -602,18 +562,17 @@ export default function Onboarding() {
     // ── Footer navigation ─────────────────────────────────────────────────────
 
     function Footer() {
-        if (step === 6) return null;
+        if (step === 5) return null;
 
-        const canSkip = step === 4 || step === 5;
-        const canBack = step > 1 && step !== 2;
+        const canSkip = step === 3 || step === 4;
+        const canBack = step > 2;
 
         async function handleNext() {
             setSkipWarning("");
             if (step === 1) await handleStep1();
-            else if (step === 2) await handleStep2Subscribe();
+            else if (step === 2) await handleStep2();
             else if (step === 3) await handleStep3();
             else if (step === 4) await handleStep4();
-            else if (step === 5) await handleStep5();
         }
 
         function handleSkip() {
@@ -628,9 +587,9 @@ export default function Onboarding() {
             setStep((s) => s - 1);
         }
 
-        const nextLabel = step === 2
-            ? "Subscribe — $1.99/mo"
-            : step === 5
+        const nextLabel = step === 1
+            ? "Create Account & Subscribe"
+            : step === 4
               ? "Finish"
               : "Next →";
 
@@ -673,12 +632,11 @@ export default function Onboarding() {
     // ── Render ────────────────────────────────────────────────────────────────
 
     const stepContent = {
-        1: <Step1 />,
-        2: <Step2 />,
-        3: <Step3 />,
-        4: <Step4 />,
-        5: <Step5 />,
-        6: <Step6 />,
+        1: Step1(),
+        2: Step2(),
+        3: Step3(),
+        4: Step4(),
+        5: Step5(),
     };
 
     return (
@@ -686,7 +644,7 @@ export default function Onboarding() {
             <div className="onboarding__container">
                 <h1 className="onboarding__title">Koin Ping</h1>
 
-                <ProgressBar />
+                {ProgressBar()}
 
                 {error && (
                     <div className="alert alert--error">{error}</div>
@@ -698,7 +656,7 @@ export default function Onboarding() {
 
                 <div className="onboarding__card">
                     {stepContent[step]}
-                    <Footer />
+                    {Footer()}
                 </div>
 
                 {step === 1 && (
