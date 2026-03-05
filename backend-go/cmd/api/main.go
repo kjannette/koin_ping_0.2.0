@@ -86,6 +86,8 @@ func main() {
 		authenticate(http.HandlerFunc(stripeHandler.CreateCheckoutSession)))
 	mux.Handle("GET "+b+"/stripe/subscription-status",
 		authenticate(http.HandlerFunc(stripeHandler.GetSubscriptionStatus)))
+	mux.Handle("POST "+b+"/stripe/verify-checkout",
+		authenticate(http.HandlerFunc(stripeHandler.VerifyCheckoutSession)))
 
 	// Authenticated + subscribed routes — addresses
 	mux.Handle("POST "+b+"/addresses",

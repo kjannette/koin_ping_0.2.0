@@ -5,7 +5,7 @@ import "./Navbar.css";
 const navLinks = [
   { to: "/addresses", label: "Addresses" },
   { to: "/alerts", label: "Configure Alerts" },
-  { to: "/alertevents", label: "Alert Events" },
+  { to: "/alertevents", label: "Alert Event History" },
 ];
 
 export default function Navbar() {
