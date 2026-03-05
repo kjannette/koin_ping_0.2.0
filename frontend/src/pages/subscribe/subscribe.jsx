@@ -1,11 +1,3 @@
-/**
- * Subscribe / Subscribe Wizard
- *
- * 5-step guided flow: Create Account -> Add Wallet -> Alert Rules -> Notifications -> Done
- * After account creation, user is redirected to Stripe Checkout for payment.
- * On successful payment, they return here at step 2 (Add Wallet).
- */
-
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
@@ -18,7 +10,7 @@ import {
 import { createCheckoutSession, getSubscriptionStatus, verifyCheckoutSession } from "../../api/stripe";
 import Input from "../../components/Input";
 import Button from "../../components/Button";
-import "./Subscribe.css";
+import "./subscribe.css";
 
 const STEPS = [
   "Create Account",
