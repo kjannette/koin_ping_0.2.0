@@ -18,7 +18,7 @@ import (
 const (
 	rpcTimeoutMS    = 30000
 	rpcMaxRetries   = 3
-	rpcRetryBaseMS  = 1000
+	rpcRetryBaseMS  = 2000
 )
 
 type JsonRpcEthereum struct {

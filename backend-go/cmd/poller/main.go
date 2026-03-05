@@ -138,6 +138,8 @@ func runCycle(
 		return
 	}
 
+	evaluator.WaitForNotifications()
+
 	duration := time.Since(startTime)
 	log.Printf("[%s] Cycle complete: %d observations, %d alerts fired in %s",
 		time.Now().UTC().Format(time.RFC3339),

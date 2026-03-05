@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sync"
 	"time"
+
+	"golang.org/x/sync/semaphore"
 
 	"github.com/kjannette/koin-ping/backend-go/internal/domain"
 	"github.com/kjannette/koin-ping/backend-go/internal/models"
@@ -17,6 +20,7 @@ const (
 	notificationTimeout    = 30 * time.Second
 	notificationMaxRetries = 3
 	notificationRetryBase  = time.Second
+	maxConcurrentNotifications = 5
 )
 
 type EvaluatorService struct {
@@ -27,6 +31,8 @@ type EvaluatorService struct {
 	notifConfigs *models.NotificationConfigModel
 	resendAPIKey string
 	emailFrom    string
+	notifSem     *semaphore.Weighted
+	notifWg      sync.WaitGroup
 }
 
 func NewEvaluatorService(
@@ -46,6 +52,7 @@ func NewEvaluatorService(
 		notifConfigs: notifConfigs,
 		resendAPIKey: resendAPIKey,
 		emailFrom:    emailFrom,
+		notifSem:     semaphore.NewWeighted(maxConcurrentNotifications),
 	}
 }
 
@@ -189,7 +196,14 @@ func (s *EvaluatorService) fireAlert(ctx context.Context, rule domain.AlertRule,
 	if addr != nil {
 		userID := addr.UserID
 		address := addr.Address
+		if err := s.notifSem.Acquire(ctx, 1); err != nil {
+			log.Printf("Failed to acquire notification semaphore for rule %d: %v", rule.ID, err)
+			return nil
+		}
+		s.notifWg.Add(1)
 		go func() {
+			defer s.notifSem.Release(1)
+			defer s.notifWg.Done()
 			notifCtx, cancel := context.WithTimeout(context.Background(), notificationTimeout)
 			defer cancel()
 			s.sendNotification(notifCtx, userID, message, obs, addressLabel, rule, address)
@@ -197,6 +211,11 @@ func (s *EvaluatorService) fireAlert(ctx context.Context, rule domain.AlertRule,
 	}
 
 	return nil
+}
+
+// WaitForNotifications blocks until all in-flight notification goroutines finish.
+func (s *EvaluatorService) WaitForNotifications() {
+	s.notifWg.Wait()
 }
 
 func (s *EvaluatorService) buildNotifiers(cfg *domain.NotificationConfig) []notifications.Notifier {
