@@ -11,6 +11,10 @@ CREATE TABLE users (
   firebase_uid VARCHAR(128) NOT NULL UNIQUE,
   email VARCHAR(255) NOT NULL,
   display_name VARCHAR(255),
+  stripe_customer_id VARCHAR(255),
+  stripe_subscription_id VARCHAR(255),
+  subscription_status VARCHAR(50) DEFAULT 'none',
+  subscription_created_at TIMESTAMP,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -73,6 +77,7 @@ CREATE TABLE user_notification_configs (
 
 -- Create indexes for common queries
 CREATE INDEX idx_users_firebase_uid ON users(firebase_uid);
+CREATE INDEX idx_users_stripe_customer_id ON users(stripe_customer_id);
 CREATE INDEX idx_addresses_user_id ON addresses(user_id);
 CREATE INDEX idx_alert_rules_address_id ON alert_rules(address_id);
 CREATE INDEX idx_alert_rules_enabled ON alert_rules(enabled);

@@ -1,0 +1,199 @@
+package handlers
+
+import (
+	"encoding/json"
+	"io"
+	"log"
+	"net/http"
+
+	"github.com/stripe/stripe-go/v82"
+	checkoutsession "github.com/stripe/stripe-go/v82/checkout/session"
+	"github.com/stripe/stripe-go/v82/webhook"
+
+	"github.com/kjannette/koin-ping/backend-go/internal/config"
+	"github.com/kjannette/koin-ping/backend-go/internal/middleware"
+	"github.com/kjannette/koin-ping/backend-go/internal/models"
+)
+
+const webhookMaxBodyBytes = 65536
+
+type StripeHandler struct {
+	users *models.UserModel
+	cfg   *config.Config
+}
+
+func NewStripeHandler(users *models.UserModel, cfg *config.Config) *StripeHandler {
+	stripe.Key = cfg.StripeSecretKey
+	return &StripeHandler{users: users, cfg: cfg}
+}
+
+// CreateCheckoutSession creates a Stripe Checkout session for the monthly subscription.
+func (h *StripeHandler) CreateCheckoutSession(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r.Context())
+
+	user, err := h.users.GetByID(r.Context(), userID)
+	if err != nil || user == nil {
+		log.Printf("Failed to get user %s: %v", userID, err)
+		writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to load user")
+		return
+	}
+
+	params := &stripe.CheckoutSessionParams{
+		Mode: stripe.String(string(stripe.CheckoutSessionModeSubscription)),
+		LineItems: []*stripe.CheckoutSessionLineItemParams{
+			{
+				Price:    stripe.String(h.cfg.StripePriceID),
+				Quantity: stripe.Int64(1),
+			},
+		},
+		SuccessURL:        stripe.String(h.cfg.FrontendURL + "/subscribe?payment=success&session_id={CHECKOUT_SESSION_ID}"),
+		CancelURL:         stripe.String(h.cfg.FrontendURL + "/subscribe?payment=cancelled"),
+		ClientReferenceID: stripe.String(userID),
+		CustomerEmail:     stripe.String(user.Email),
+	}
+
+	if user.StripeCustomerID != nil && *user.StripeCustomerID != "" {
+		params.Customer = user.StripeCustomerID
+		params.CustomerEmail = nil
+	}
+
+	s, err := checkoutsession.New(params)
+	if err != nil {
+		log.Printf("Failed to create Stripe checkout session: %v", err)
+		writeError(w, http.StatusInternalServerError, "STRIPE_ERROR", "Failed to create checkout session")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"url": s.URL})
+}
+
+// GetSubscriptionStatus returns the current user's subscription state.
+func (h *StripeHandler) GetSubscriptionStatus(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r.Context())
+
+	user, err := h.users.GetByID(r.Context(), userID)
+	if err != nil || user == nil {
+		log.Printf("Failed to get user %s: %v", userID, err)
+		writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to load user")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"subscription_status":     user.SubscriptionStatus,
+		"subscription_created_at": user.SubscriptionCreatedAt,
+	})
+}
+
+// HandleWebhook processes incoming Stripe webhook events.
+// This endpoint must NOT require authentication (Stripe calls it directly).
+func (h *StripeHandler) HandleWebhook(w http.ResponseWriter, r *http.Request) {
+	payload, err := io.ReadAll(io.LimitReader(r.Body, webhookMaxBodyBytes))
+	if err != nil {
+		log.Printf("Error reading webhook body: %v", err)
+		w.WriteHeader(http.StatusServiceUnavailable)
+		return
+	}
+
+	sig := r.Header.Get("Stripe-Signature")
+	event, err := webhook.ConstructEvent(payload, sig, h.cfg.StripeWebhookSecret)
+	if err != nil {
+		log.Printf("Webhook signature verification failed: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	switch event.Type {
+	case "checkout.session.completed":
+		h.handleCheckoutCompleted(r, event)
+	case "customer.subscription.updated":
+		h.handleSubscriptionUpdated(r, event)
+	case "customer.subscription.deleted":
+		h.handleSubscriptionDeleted(r, event)
+	default:
+		log.Printf("Unhandled Stripe event type: %s", event.Type)
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *StripeHandler) handleCheckoutCompleted(r *http.Request, event stripe.Event) {
+	var session stripe.CheckoutSession
+	if err := json.Unmarshal(event.Data.Raw, &session); err != nil {
+		log.Printf("Error parsing checkout session: %v", err)
+		return
+	}
+
+	userID := session.ClientReferenceID
+	if userID == "" {
+		log.Println("Checkout session missing client_reference_id")
+		return
+	}
+
+	customerID := ""
+	if session.Customer != nil {
+		customerID = session.Customer.ID
+	}
+	subscriptionID := ""
+	if session.Subscription != nil {
+		subscriptionID = session.Subscription.ID
+	}
+
+	if customerID != "" {
+		if err := h.users.UpdateStripeCustomer(r.Context(), userID, customerID); err != nil {
+			log.Printf("Failed to save Stripe customer ID: %v", err)
+		}
+	}
+
+	if subscriptionID != "" && customerID != "" {
+		if err := h.users.ActivateSubscription(r.Context(), customerID, subscriptionID, "active"); err != nil {
+			log.Printf("Failed to activate subscription: %v", err)
+		}
+	}
+
+	log.Printf("Checkout completed for user %s, customer %s, subscription %s", userID, customerID, subscriptionID)
+}
+
+func (h *StripeHandler) handleSubscriptionUpdated(r *http.Request, event stripe.Event) {
+	var sub stripe.Subscription
+	if err := json.Unmarshal(event.Data.Raw, &sub); err != nil {
+		log.Printf("Error parsing subscription update: %v", err)
+		return
+	}
+
+	customerID := ""
+	if sub.Customer != nil {
+		customerID = sub.Customer.ID
+	}
+	if customerID == "" {
+		return
+	}
+
+	status := string(sub.Status)
+	if err := h.users.ActivateSubscription(r.Context(), customerID, sub.ID, status); err != nil {
+		log.Printf("Failed to update subscription status: %v", err)
+	}
+
+	log.Printf("Subscription %s updated to %s for customer %s", sub.ID, status, customerID)
+}
+
+func (h *StripeHandler) handleSubscriptionDeleted(r *http.Request, event stripe.Event) {
+	var sub stripe.Subscription
+	if err := json.Unmarshal(event.Data.Raw, &sub); err != nil {
+		log.Printf("Error parsing subscription deletion: %v", err)
+		return
+	}
+
+	customerID := ""
+	if sub.Customer != nil {
+		customerID = sub.Customer.ID
+	}
+	if customerID == "" {
+		return
+	}
+
+	if err := h.users.UpdateSubscriptionStatus(r.Context(), customerID, "canceled"); err != nil {
+		log.Printf("Failed to mark subscription canceled: %v", err)
+	}
+
+	log.Printf("Subscription canceled for customer %s", customerID)
+}

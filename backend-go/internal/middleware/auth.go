@@ -100,6 +100,43 @@ func Authenticate(userModel *models.UserModel) func(http.Handler) http.Handler {
 	}
 }
 
+// RequireSubscription blocks requests from users without an active subscription.
+// Must be applied after Authenticate.
+func RequireSubscription(userModel *models.UserModel) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			userID := GetUserID(r.Context())
+			if userID == "" {
+				writeJSON(w, http.StatusUnauthorized, errorResponse{
+					Error:   "UNAUTHORIZED",
+					Message: "Authentication required",
+				})
+				return
+			}
+
+			user, err := userModel.GetByID(r.Context(), userID)
+			if err != nil || user == nil {
+				log.Printf("RequireSubscription: failed to load user %s: %v", userID, err)
+				writeJSON(w, http.StatusInternalServerError, errorResponse{
+					Error:   "INTERNAL_ERROR",
+					Message: "Failed to verify subscription",
+				})
+				return
+			}
+
+			if user.SubscriptionStatus != "active" && user.SubscriptionStatus != "trialing" {
+				writeJSON(w, http.StatusForbidden, errorResponse{
+					Error:   "SUBSCRIPTION_REQUIRED",
+					Message: "An active subscription is required to use this feature",
+				})
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 func GetUserID(ctx context.Context) string {
 	if v, ok := ctx.Value(UserIDKey).(string); ok {
 		return v

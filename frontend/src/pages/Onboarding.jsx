@@ -1,11 +1,13 @@
 /**
- * Onboarding Wizard
+ * Subscribe / Onboarding Wizard
  *
  * 5-step guided flow: Create Account -> Add Wallet -> Alert Rules -> Notifications -> Done
+ * After account creation, user is redirected to Stripe Checkout for payment.
+ * On successful payment, they return here at step 2 (Add Wallet).
  */
 
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { createAddress, getAddresses } from "../api/addresses";
 import { createAlert } from "../api/alerts";
@@ -13,6 +15,7 @@ import {
     updateNotificationConfig,
     testNotificationChannels,
 } from "../api/notificationConfig";
+import { createCheckoutSession, getSubscriptionStatus } from "../api/stripe";
 import Input from "../components/Input";
 import Button from "../components/Button";
 import "./Onboarding.css";
@@ -28,6 +31,7 @@ const STEPS = [
 export default function Onboarding() {
     const { currentUser, signup } = useAuth();
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
 
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
@@ -71,6 +75,20 @@ export default function Onboarding() {
             .catch(() => {});
     }, [currentUser, navigate]);
 
+    // Handle Stripe redirect back from checkout
+    useEffect(() => {
+        if (!currentUser) return;
+        const payment = searchParams.get("payment");
+        if (payment === "success") {
+            setSearchParams({}, { replace: true });
+            setStep(2);
+        } else if (payment === "cancelled") {
+            setSearchParams({}, { replace: true });
+            setStep(1);
+            setError("Payment was cancelled. Please try again.");
+        }
+    }, [currentUser, searchParams, setSearchParams]);
+
     // ── Step handlers ─────────────────────────────────────────────────────────
 
     async function handleStep1() {
@@ -87,27 +105,30 @@ export default function Onboarding() {
             setError("Password must be at least 6 characters");
             return;
         }
-        if (!currentUser) {
-            try {
-                setLoading(true);
+        try {
+            setLoading(true);
+            if (!currentUser) {
                 await signup(data.email, data.password);
-            } catch (err) {
-                if (err.code === "auth/email-already-in-use") {
-                    setError("Email already in use. Try logging in instead.");
-                } else if (err.code === "auth/invalid-email") {
-                    setError("Invalid email address");
-                } else if (err.code === "auth/weak-password") {
-                    setError("Password is too weak");
-                } else {
-                    setError("Failed to create account: " + err.message);
-                }
-                setLoading(false);
-                return;
-            } finally {
-                setLoading(false);
             }
+            const status = await getSubscriptionStatus();
+            if (status.subscription_status === "active" || status.subscription_status === "trialing") {
+                setStep(2);
+                return;
+            }
+            const { url } = await createCheckoutSession();
+            window.location.href = url;
+        } catch (err) {
+            if (err.code === "auth/email-already-in-use") {
+                setError("Email already in use. Try logging in instead.");
+            } else if (err.code === "auth/invalid-email") {
+                setError("Invalid email address");
+            } else if (err.code === "auth/weak-password") {
+                setError("Password is too weak");
+            } else {
+                setError("Failed to create account: " + err.message);
+            }
+            setLoading(false);
         }
-        setStep(2);
     }
 
     async function handleStep2() {
@@ -544,7 +565,7 @@ export default function Onboarding() {
         if (step === 5) return null;
 
         const canSkip = step === 3 || step === 4;
-        const canBack = step > 1;
+        const canBack = step > 2;
 
         async function handleNext() {
             setSkipWarning("");
@@ -565,6 +586,12 @@ export default function Onboarding() {
             setSkipWarning("");
             setStep((s) => s - 1);
         }
+
+        const nextLabel = step === 1
+            ? "Create Account & Subscribe"
+            : step === 4
+              ? "Finish"
+              : "Next →";
 
         return (
             <div className="onboarding__footer">
@@ -595,7 +622,7 @@ export default function Onboarding() {
                         disabled={loading}
                         className="text-bold"
                     >
-                        {loading ? "Please wait..." : step === 4 ? "Finish" : "Next →"}
+                        {loading ? "Please wait..." : nextLabel}
                     </Button>
                 </div>
             </div>
@@ -605,11 +632,11 @@ export default function Onboarding() {
     // ── Render ────────────────────────────────────────────────────────────────
 
     const stepContent = {
-        1: <Step1 />,
-        2: <Step2 />,
-        3: <Step3 />,
-        4: <Step4 />,
-        5: <Step5 />,
+        1: Step1(),
+        2: Step2(),
+        3: Step3(),
+        4: Step4(),
+        5: Step5(),
     };
 
     return (
@@ -617,7 +644,7 @@ export default function Onboarding() {
             <div className="onboarding__container">
                 <h1 className="onboarding__title">Koin Ping</h1>
 
-                <ProgressBar />
+                {ProgressBar()}
 
                 {error && (
                     <div className="alert alert--error">{error}</div>
@@ -629,7 +656,7 @@ export default function Onboarding() {
 
                 <div className="onboarding__card">
                     {stepContent[step]}
-                    <Footer />
+                    {Footer()}
                 </div>
 
                 {step === 1 && (

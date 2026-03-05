@@ -16,7 +16,7 @@ export default function App() {
             <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
-                <Route path="/onboarding" element={<Onboarding />} />
+                <Route path="/subscribe" element={<Onboarding />} />
                 <Route path="*" element={<Navigate to="/login" />} />
             </Routes>
         );
@@ -30,7 +30,7 @@ export default function App() {
                 <Route path="/addresses" element={<Addresses />} />
                 <Route path="/alerts" element={<Alerts />} />
                 <Route path="/alertevents" element={<AlertHistory />} />
-                <Route path="/onboarding" element={<Onboarding />} />
+                <Route path="/subscribe" element={<Onboarding />} />
                 <Route path="*" element={<Navigate to="/addresses" />} />
             </Routes>
         </div>
