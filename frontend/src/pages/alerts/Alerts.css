@@ -61,3 +61,54 @@
   gap: 0.75rem;
   margin-top: 1rem;
 }
+
+/* ── Alerts Page Responsive ──────────────────────────────── */
+
+/* Laptop: tighten the gap */
+@media (max-width: 1024px) {
+  .alerts-grid {
+    gap: 1.5rem;
+  }
+}
+
+/* Tablet & below: collapse to single column */
+@media (max-width: 768px) {
+  .alerts-grid {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+}
+
+/* Mobile: compact spacing */
+@media (max-width: 480px) {
+  .alerts-grid {
+    gap: 2rem;
+  }
+
+  .alerts__address-info {
+    padding: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .alerts__rule {
+    padding: 0.75rem;
+  }
+
+  .alerts__rule .flex--between {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .alerts__save-test {
+    flex-direction: column;
+  }
+
+  .alerts__save-test .btn--lg {
+    width: 100%;
+    text-align: center;
+  }
+
+  .alerts__email-buttons {
+    flex-direction: column;
+  }
+}

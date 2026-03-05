@@ -236,3 +236,25 @@
   margin: 0;
   font-style: italic;
 }
+
+/* ── Subscribe Responsive ────────────────────────────────── */
+
+@media (max-width: 480px) {
+  .subscribe {
+    padding-top: 1.5rem;
+  }
+
+  .subscribe__card {
+    padding: 1.25rem;
+  }
+
+  .progress-bar__connector {
+    width: 24px;
+  }
+
+  .progress-bar__dot {
+    width: 26px;
+    height: 26px;
+    font-size: 0.75rem;
+  }
+}

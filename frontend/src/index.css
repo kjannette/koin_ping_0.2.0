@@ -356,3 +356,73 @@ button {
   color: white;
   font-size: 0.85rem;
 }
+
+/* ── Responsive Breakpoints ──────────────────────────────── */
+/* Mobile:  <= 480px                                          */
+/* Tablet:  481px – 768px                                     */
+/* Laptop:  769px – 1024px                                    */
+/* Desktop: >= 1025px (default styles above)                  */
+
+/* Laptop & below */
+@media (max-width: 1024px) {
+  .page--wide {
+    max-width: 100%;
+  }
+}
+
+/* Tablet & below */
+@media (max-width: 768px) {
+  html {
+    font-size: 13px;
+  }
+
+  .page {
+    padding: 1.25rem;
+  }
+
+  .btn--lg {
+    padding: 0.6rem 1.2rem;
+  }
+
+  h1 {
+    font-size: 1.75rem;
+  }
+
+  h2 {
+    font-size: 1.4rem;
+  }
+
+  h3 {
+    font-size: 1.15rem;
+  }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  html {
+    font-size: 12px;
+  }
+
+  .page {
+    padding: 1rem 0.75rem;
+  }
+
+  .form-control,
+  .form-select {
+    font-size: 0.95rem;
+  }
+
+  .btn {
+    padding: 0.45rem 0.85rem;
+    font-size: 0.95rem;
+  }
+
+  .btn--lg {
+    padding: 0.55rem 1rem;
+    font-size: 1rem;
+  }
+
+  .section {
+    padding: 0.75rem;
+  }
+}

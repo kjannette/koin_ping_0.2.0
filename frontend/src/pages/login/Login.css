@@ -96,3 +96,21 @@
   animation: fadeIn 2s ease-in-out forwards;
   animation-delay: 6s;
 }
+
+/* ── Login Responsive ────────────────────────────────────── */
+
+@media (max-width: 480px) {
+  .login-card {
+    max-width: 100%;
+    margin: 0 0.75rem;
+    padding: 1.5rem;
+    padding-top: 6rem;
+  }
+
+  .login-tagline {
+    margin-top: 3rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    font-size: 1.25rem;
+  }
+}

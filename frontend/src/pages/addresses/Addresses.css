@@ -28,3 +28,13 @@
   margin-left: 1rem;
   flex-shrink: 0;
 }
+
+/* ── Addresses Responsive ────────────────────────────────── */
+
+@media (max-width: 480px) {
+  .address__remove {
+    margin-left: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+  }
+}
