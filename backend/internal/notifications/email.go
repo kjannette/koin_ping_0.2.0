@@ -97,8 +97,12 @@ func SendEmailNotification(apiKey, fromAddress, toAddress, message string, meta 
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		err := fmt.Errorf("resend API failed: HTTP %d", resp.StatusCode)
 		log.Printf("Resend API failed: HTTP %d", resp.StatusCode)
-		return false, fmt.Errorf("resend API failed: HTTP %d", resp.StatusCode)
+		if isPermanentStatusCode(resp.StatusCode) {
+			return false, &PermanentError{Err: err}
+		}
+		return false, err
 	}
 
 	return true, nil

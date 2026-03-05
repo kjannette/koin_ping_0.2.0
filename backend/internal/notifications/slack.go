@@ -87,8 +87,12 @@ func SendSlackNotification(webhookURL, message string, meta AlertMetadata) (bool
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		err := fmt.Errorf("slack webhook failed: HTTP %d", resp.StatusCode)
 		log.Printf("Slack webhook failed: HTTP %d", resp.StatusCode)
-		return false, fmt.Errorf("slack webhook failed: HTTP %d", resp.StatusCode)
+		if isPermanentStatusCode(resp.StatusCode) {
+			return false, &PermanentError{Err: err}
+		}
+		return false, err
 	}
 
 	return true, nil

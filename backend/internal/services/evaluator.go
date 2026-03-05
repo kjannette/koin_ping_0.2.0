@@ -261,8 +261,14 @@ func sendWithRetry(ctx context.Context, n notifications.Notifier, message string
 		}
 
 		if err := n.Send(ctx, message, meta); err != nil {
-			log.Printf("Notification attempt %d/%d failed: %v", attempt+1, notificationMaxRetries, err)
 			lastErr = err
+
+			if notifications.IsPermanent(err) {
+				log.Printf("Permanent notification failure, skipping retries: %v", err)
+				return err
+			}
+
+			log.Printf("Notification attempt %d/%d failed: %v", attempt+1, notificationMaxRetries, err)
 			continue
 		}
 
