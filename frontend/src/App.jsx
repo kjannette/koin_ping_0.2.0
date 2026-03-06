@@ -3,7 +3,7 @@ import { useAuth } from "./contexts/AuthContext";
 import Navbar from "./components/Navbar";
 import Login from "./pages/login/Login";
 import Signup from "./pages/Signup";
-import Subscribe from "./pages/subscribe/subscribe";
+import Subscribe from "./pages/subscribe/Subscribe";
 import Addresses from "./pages/addresses/Addresses";
 import Alerts from "./pages/alerts/Alerts";
 import AlertHistory from "./pages/alertHistory/AlertHistory";

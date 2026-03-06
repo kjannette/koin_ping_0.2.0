@@ -10,7 +10,7 @@ import {
 import { createCheckoutSession, getSubscriptionStatus, verifyCheckoutSession } from "../../api/stripe";
 import Input from "../../components/Input";
 import Button from "../../components/Button";
-import "./subscribe.css";
+import "./Subscribe.css";
 
 const STEPS = [
   "Create Account",
