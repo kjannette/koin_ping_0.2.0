@@ -42,7 +42,7 @@ export default function Login() {
         playsInline
         className="login-bg-video"
       >
-        <source src="/koin_spin.mp4" type="video/mp4" />
+        <source src="/koin_exp_2.mp4" type="video/mp4" />
       </video>
 
       <div className="login-card login-card-fadein">
