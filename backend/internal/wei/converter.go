@@ -90,6 +90,14 @@ func LessThan(weiA, weiB string) (bool, error) {
 	return cmp < 0, nil
 }
 
+func LessThanOrEqual(weiA, weiB string) (bool, error) {
+	cmp, err := Compare(weiA, weiB)
+	if err != nil {
+		return false, err
+	}
+	return cmp <= 0, nil
+}
+
 // FormatAsEth formats a Wei string as "X.XXXX ETH".
 func FormatAsEth(weiString string, decimals int) (string, error) {
 	eth, err := ToEth(weiString)

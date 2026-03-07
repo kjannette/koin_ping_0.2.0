@@ -51,6 +51,69 @@
   opacity: 0.6;
 }
 
+.alerts__accordion-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0.5rem 0 0;
+  border-top: 1px solid var(--color-border);
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  background: none;
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+  width: 100%;
+  text-align: left;
+}
+
+.alerts__accordion-toggle:hover {
+  color: var(--color-text);
+}
+
+.alerts__accordion-chevron {
+  display: inline-block;
+  transition: transform 0.2s ease;
+  font-size: 0.7rem;
+}
+
+.alerts__accordion-chevron--open {
+  transform: rotate(90deg);
+}
+
+.alerts__accordion-panel {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 0.25s ease, opacity 0.2s ease, padding 0.25s ease;
+  padding: 0 0.25rem;
+}
+
+.alerts__accordion-panel--open {
+  max-height: 200px;
+  opacity: 1;
+  padding: 0.75rem 0.25rem 0.25rem;
+}
+
+.alerts__threshold-inputs {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+.alerts__threshold-inputs .form-field {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.alerts__threshold-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
 .alerts__email-buttons {
   display: flex;
   gap: 0.5rem;
