@@ -37,6 +37,8 @@ func (h *AlertRuleHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		Type      string          `json:"type"`
 		Threshold json.RawMessage `json:"threshold"`
+		Minimum   json.RawMessage `json:"minimum"`
+		Maximum   json.RawMessage `json:"maximum"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		log.Printf("Failed to decode alert request body: %v", err)
@@ -49,6 +51,40 @@ func (h *AlertRuleHandler) Create(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Failed to parse threshold: %v", err)
 		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "threshold must be a valid number")
+
+		return
+	}
+
+	minimum, err := parseThreshold(body.Minimum)
+	if err != nil {
+		log.Printf("Failed to parse minimum: %v", err)
+		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "minimum must be a valid number")
+
+		return
+	}
+
+	maximum, err := parseThreshold(body.Maximum)
+	if err != nil {
+		log.Printf("Failed to parse maximum: %v", err)
+		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "maximum must be a valid number")
+
+		return
+	}
+
+	if minimum != nil && *minimum < 0 {
+		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "minimum must be non-negative")
+
+		return
+	}
+
+	if maximum != nil && *maximum < 0 {
+		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "maximum must be non-negative")
+
+		return
+	}
+
+	if minimum != nil && maximum != nil && *minimum > *maximum {
+		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "minimum must not exceed maximum")
 
 		return
 	}
@@ -96,7 +132,7 @@ func (h *AlertRuleHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newAlert, err := h.alertRules.Create(r.Context(), addressID, alertType, threshold)
+	newAlert, err := h.alertRules.Create(r.Context(), addressID, alertType, threshold, minimum, maximum)
 	if err != nil {
 		log.Printf("Error creating alert rule: %v", err)
 		writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to create alert rule")
@@ -182,7 +218,7 @@ func (h *AlertRuleHandler) ListByAddress(w http.ResponseWriter, r *http.Request)
 	writeJSON(w, http.StatusOK, alerts)
 }
 
-// UpdateStatus handles PATCH requests to enable or disable an alert rule.
+// UpdateStatus handles PATCH requests to enable/disable an alert rule and/or update min/max thresholds.
 func (h *AlertRuleHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r.Context())
 	alertID, ok := parseIntParam(r.PathValue("alertId"))
@@ -193,7 +229,10 @@ func (h *AlertRuleHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) 
 	}
 
 	var body struct {
-		Enabled *bool `json:"enabled"`
+		Enabled        *bool           `json:"enabled"`
+		Minimum        json.RawMessage `json:"minimum"`
+		Maximum        json.RawMessage `json:"maximum"`
+		UpdateMinMax   bool            `json:"update_min_max"`   //nolint:tagliatelle
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		log.Printf("Failed to decode update request body: %v", err)
@@ -204,8 +243,8 @@ func (h *AlertRuleHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) 
 
 	log.Printf("User %s updating alert ID: %d", userID, alertID)
 
-	if body.Enabled == nil {
-		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "enabled must be a boolean value")
+	if body.Enabled == nil && !body.UpdateMinMax {
+		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "must provide enabled (boolean) or update_min_max with minimum/maximum values")
 
 		return
 	}
@@ -224,15 +263,64 @@ func (h *AlertRuleHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	updated, err := h.alertRules.UpdateEnabled(r.Context(), alertID, *body.Enabled)
-	if err != nil {
-		log.Printf("Error updating alert: %v", err)
-		writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to update alert")
+	var updated *domain.AlertRule
 
-		return
+	if body.UpdateMinMax {
+		minimum, parseErr := parseThreshold(body.Minimum)
+		if parseErr != nil {
+			writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "minimum must be a valid number")
+
+			return
+		}
+
+		maximum, parseErr := parseThreshold(body.Maximum)
+		if parseErr != nil {
+			writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "maximum must be a valid number")
+
+			return
+		}
+
+		if minimum != nil && *minimum < 0 {
+			writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "minimum must be non-negative")
+
+			return
+		}
+
+		if maximum != nil && *maximum < 0 {
+			writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "maximum must be non-negative")
+
+			return
+		}
+
+		if minimum != nil && maximum != nil && *minimum > *maximum {
+			writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "minimum must not exceed maximum")
+
+			return
+		}
+
+		updated, err = h.alertRules.UpdateThresholds(r.Context(), alertID, minimum, maximum)
+		if err != nil {
+			log.Printf("Error updating alert thresholds: %v", err)
+			writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to update alert")
+
+			return
+		}
+
+		log.Printf("Alert %d thresholds updated: min=%v, max=%v", alertID, minimum, maximum)
 	}
 
-	log.Printf("Alert %d updated: enabled=%v", alertID, *body.Enabled)
+	if body.Enabled != nil {
+		updated, err = h.alertRules.UpdateEnabled(r.Context(), alertID, *body.Enabled)
+		if err != nil {
+			log.Printf("Error updating alert: %v", err)
+			writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to update alert")
+
+			return
+		}
+
+		log.Printf("Alert %d updated: enabled=%v", alertID, *body.Enabled)
+	}
+
 	writeJSON(w, http.StatusOK, updated)
 }
 

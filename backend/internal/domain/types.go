@@ -73,6 +73,8 @@ type AlertRule struct {
 	AddressID int       `json:"address_id"` //nolint:tagliatelle
 	Type      AlertType `json:"type"`
 	Threshold *float64  `json:"threshold"`
+	Minimum   *float64  `json:"minimum"`
+	Maximum   *float64  `json:"maximum"`
 	Enabled   bool      `json:"enabled"`
 	CreatedAt time.Time `json:"created_at"` //nolint:tagliatelle
 }

@@ -7,6 +7,7 @@ import {
   getAlerts,
   createAlert,
   updateAlertStatus,
+  updateAlertThresholds,
   deleteAlert,
 } from "../../api/alerts";
 import {
@@ -38,6 +39,64 @@ export default function Alerts() {
   const [settingUpEmail, setSettingUpEmail] = useState(false);
   const [sendingDigest, setSendingDigest] = useState(false);
   const [hasExistingConfig, setHasExistingConfig] = useState(false);
+
+  const [openAccordions, setOpenAccordions] = useState({});
+  const [thresholdEdits, setThresholdEdits] = useState({});
+
+  function toggleAccordion(alertId) {
+    setOpenAccordions((prev) => ({ ...prev, [alertId]: !prev[alertId] }));
+  }
+
+  function getThresholdEdit(alert) {
+    if (thresholdEdits[alert.id]) return thresholdEdits[alert.id];
+    return {
+      minimum: alert.minimum != null ? String(alert.minimum) : "",
+      maximum: alert.maximum != null ? String(alert.maximum) : "",
+    };
+  }
+
+  function setThresholdEdit(alertId, field, value) {
+    setThresholdEdits((prev) => {
+      const current = prev[alertId] || getThresholdEditForAlert(alertId);
+      return { ...prev, [alertId]: { ...current, [field]: value } };
+    });
+  }
+
+  function getThresholdEditForAlert(alertId) {
+    const alert = alerts.find((a) => a.id === alertId);
+    return {
+      minimum: alert?.minimum != null ? String(alert.minimum) : "",
+      maximum: alert?.maximum != null ? String(alert.maximum) : "",
+    };
+  }
+
+  async function handleSaveThresholds(alertId) {
+    const edit = thresholdEdits[alertId];
+    if (!edit) return;
+
+    const min = edit.minimum.trim() === "" ? null : Number(edit.minimum);
+    const max = edit.maximum.trim() === "" ? null : Number(edit.maximum);
+
+    if (min !== null && isNaN(min)) return;
+    if (max !== null && isNaN(max)) return;
+    if (min !== null && max !== null && min > max) return;
+
+    try {
+      const updated = await updateAlertThresholds(alertId, min, max);
+      setAlerts((prev) =>
+        prev.map((a) => (a.id === alertId ? updated : a)),
+      );
+      setThresholdEdits((prev) => {
+        const next = { ...prev };
+        delete next[alertId];
+        return next;
+      });
+      setError(null);
+    } catch (err) {
+      setError(err.message);
+      console.error("Failed to update thresholds:", err);
+    }
+  }
 
   useEffect(() => {
     async function fetchData() {
@@ -314,42 +373,132 @@ export default function Alerts() {
                   </p>
                 ) : (
                   <ul className="list-unstyled">
-                    {alerts.map((alert) => (
-                      <li
-                        key={alert.id}
-                        className={`alerts__rule ${!alert.enabled ? "alerts__rule--disabled" : ""}`}
-                      >
-                        <div className="flex flex--between">
-                          <div>
-                            <div className="text-bold mb-sm">
-                              {formatAlertType(alert.type)}
-                            </div>
-                            {alert.threshold && (
-                              <div className="text-sm text-muted">
-                                Threshold: {alert.threshold} ETH
+                    {alerts.map((alert) => {
+                      const hasAccordion =
+                        alert.type === "incoming_tx" ||
+                        alert.type === "outgoing_tx";
+                      const isOpen = !!openAccordions[alert.id];
+                      const edit = getThresholdEdit(alert);
+
+                      return (
+                        <li
+                          key={alert.id}
+                          className={`alerts__rule ${!alert.enabled ? "alerts__rule--disabled" : ""}`}
+                        >
+                          <div className="flex flex--between">
+                            <div>
+                              <div className="text-bold mb-sm">
+                                {formatAlertType(alert.type)}
                               </div>
-                            )}
-                            <div className="text-xs text-dimmed">
-                              Status: {alert.enabled ? "Enabled" : "Disabled"}
+                              {alert.threshold && (
+                                <div className="text-sm text-muted">
+                                  Threshold: {alert.threshold} ETH
+                                </div>
+                              )}
+                              {alert.minimum != null && (
+                                <div className="text-sm text-muted">
+                                  Min: {alert.minimum} ETH
+                                </div>
+                              )}
+                              {alert.maximum != null && (
+                                <div className="text-sm text-muted">
+                                  Max: {alert.maximum} ETH
+                                </div>
+                              )}
+                              <div className="text-xs text-dimmed">
+                                Status:{" "}
+                                {alert.enabled ? "Enabled" : "Disabled"}
+                              </div>
+                            </div>
+                            <div className="flex flex--center gap-sm">
+                              <Button
+                                onClick={() =>
+                                  handleToggleAlert(
+                                    alert.id,
+                                    alert.enabled,
+                                  )
+                                }
+                              >
+                                {alert.enabled ? "Disable" : "Enable"}
+                              </Button>
+                              <Button
+                                onClick={() =>
+                                  handleDeleteAlert(alert.id)
+                                }
+                              >
+                                Delete
+                              </Button>
                             </div>
                           </div>
-                          <div className="flex flex--center gap-sm">
-                            <Button
-                              onClick={() =>
-                                handleToggleAlert(alert.id, alert.enabled)
-                              }
-                            >
-                              {alert.enabled ? "Disable" : "Enable"}
-                            </Button>
-                            <Button
-                              onClick={() => handleDeleteAlert(alert.id)}
-                            >
-                              Delete
-                            </Button>
-                          </div>
-                        </div>
-                      </li>
-                    ))}
+
+                          {hasAccordion && (
+                            <>
+                              <button
+                                type="button"
+                                className="alerts__accordion-toggle"
+                                onClick={() =>
+                                  toggleAccordion(alert.id)
+                                }
+                              >
+                                <span
+                                  className={`alerts__accordion-chevron ${isOpen ? "alerts__accordion-chevron--open" : ""}`}
+                                >
+                                  &#9654;
+                                </span>
+                                Add optional minimum and maximum
+                                threshold values
+                              </button>
+                              <div
+                                className={`alerts__accordion-panel ${isOpen ? "alerts__accordion-panel--open" : ""}`}
+                              >
+                                <div className="alerts__threshold-inputs">
+                                  <Input
+                                    label="Minimum"
+                                    type="number"
+                                    step="0.000001"
+                                    min="0"
+                                    value={edit.minimum}
+                                    onChange={(v) =>
+                                      setThresholdEdit(
+                                        alert.id,
+                                        "minimum",
+                                        v,
+                                      )
+                                    }
+                                    placeholder="No minimum"
+                                  />
+                                  <Input
+                                    label="Maximum"
+                                    type="number"
+                                    step="0.000001"
+                                    min="0"
+                                    value={edit.maximum}
+                                    onChange={(v) =>
+                                      setThresholdEdit(
+                                        alert.id,
+                                        "maximum",
+                                        v,
+                                      )
+                                    }
+                                    placeholder="No maximum"
+                                  />
+                                </div>
+                                <div className="alerts__threshold-actions">
+                                  <Button
+                                    onClick={() =>
+                                      handleSaveThresholds(alert.id)
+                                    }
+                                    className="btn--sm"
+                                  >
+                                    Save
+                                  </Button>
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </div>

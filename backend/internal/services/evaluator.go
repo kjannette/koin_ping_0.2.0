@@ -104,9 +104,9 @@ func (s *EvaluatorService) evaluateObservation(ctx context.Context, obs domain.O
 func (s *EvaluatorService) ruleMatches(ctx context.Context, rule domain.AlertRule, obs domain.ObservedTx) (bool, error) {
 	switch rule.Type {
 	case domain.AlertIncomingTx:
-		return obs.Direction == domain.DirectionIncoming, nil
+		return s.matchesDirectionalTx(rule, obs, domain.DirectionIncoming)
 	case domain.AlertOutgoingTx:
-		return obs.Direction == domain.DirectionOutgoing, nil
+		return s.matchesDirectionalTx(rule, obs, domain.DirectionOutgoing)
 	case domain.AlertLargeTransfer:
 		return s.matchesLargeTransfer(rule, obs)
 	case domain.AlertBalanceBelow:
@@ -115,6 +115,42 @@ func (s *EvaluatorService) ruleMatches(ctx context.Context, rule domain.AlertRul
 		log.Printf("Unknown rule type: %s", rule.Type)
 		return false, nil
 	}
+}
+
+func (s *EvaluatorService) matchesDirectionalTx(rule domain.AlertRule, obs domain.ObservedTx, expected domain.Direction) (bool, error) {
+	if obs.Direction != expected {
+		return false, nil
+	}
+
+	if rule.Minimum != nil {
+		minWei, err := wei.FromEth(*rule.Minimum)
+		if err != nil {
+			return false, err
+		}
+		aboveMin, err := wei.GreaterThanOrEqual(obs.Value, minWei)
+		if err != nil {
+			return false, err
+		}
+		if !aboveMin {
+			return false, nil
+		}
+	}
+
+	if rule.Maximum != nil {
+		maxWei, err := wei.FromEth(*rule.Maximum)
+		if err != nil {
+			return false, err
+		}
+		belowMax, err := wei.LessThanOrEqual(obs.Value, maxWei)
+		if err != nil {
+			return false, err
+		}
+		if !belowMax {
+			return false, nil
+		}
+	}
+
+	return true, nil
 }
 
 func (s *EvaluatorService) matchesLargeTransfer(rule domain.AlertRule, obs domain.ObservedTx) (bool, error) {

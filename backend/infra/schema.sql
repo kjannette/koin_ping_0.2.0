@@ -35,6 +35,8 @@ CREATE TABLE alert_rules (
   address_id INTEGER NOT NULL REFERENCES addresses(id) ON DELETE CASCADE,
   type VARCHAR(50) NOT NULL,           -- 'incoming_tx', 'outgoing_tx', 'large_transfer', 'balance_below'
   threshold DECIMAL(20, 6),            -- ETH amount threshold (nullable for tx types that don't need it)
+  minimum DECIMAL(20, 6),              -- Optional min amount filter for incoming/outgoing alerts
+  maximum DECIMAL(20, 6),              -- Optional max amount filter for incoming/outgoing alerts
   enabled BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMP DEFAULT NOW(),
 
@@ -44,7 +46,11 @@ CREATE TABLE alert_rules (
 
   CONSTRAINT positive_threshold CHECK (
     threshold IS NULL OR threshold > 0
-  )
+  ),
+
+  CONSTRAINT non_negative_minimum CHECK (minimum IS NULL OR minimum >= 0),
+  CONSTRAINT non_negative_maximum CHECK (maximum IS NULL OR maximum >= 0),
+  CONSTRAINT min_lte_max CHECK (minimum IS NULL OR maximum IS NULL OR minimum <= maximum)
 );
 
 

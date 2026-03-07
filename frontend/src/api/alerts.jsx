@@ -130,6 +130,48 @@ export async function updateAlertStatus(alertId, enabled) {
 }
 
 /**
+ * Update the min/max thresholds on an alert rule
+ * @param {number} alertId - Alert rule ID
+ * @param {number|null} minimum - Minimum amount (null to clear)
+ * @param {number|null} maximum - Maximum amount (null to clear)
+ * @returns {Promise<Object>} Updated alert rule
+ */
+export async function updateAlertThresholds(alertId, minimum, maximum) {
+    try {
+        const headers = await getAuthHeaders();
+        const response = await fetch(`${API_BASE}/alerts/${alertId}`, {
+            method: "PATCH",
+            headers: headers,
+            body: JSON.stringify({
+                update_min_max: true,
+                minimum: minimum ?? null,
+                maximum: maximum ?? null,
+            }),
+        });
+
+        if (!response.ok) {
+            let errorMessage = "Failed to update alert thresholds";
+            try {
+                const error = await response.json();
+                errorMessage = error.message || errorMessage;
+            } catch {
+                errorMessage = `Server error: ${response.status} ${response.statusText}`;
+            }
+            throw new Error(errorMessage);
+        }
+
+        return response.json();
+    } catch (error) {
+        if (error.message.includes("fetch")) {
+            throw new Error(
+                "Cannot connect to server. Is the backend running?",
+            );
+        }
+        throw error;
+    }
+}
+
+/**
  * Delete an alert rule
  * @param {number} alertId - Alert rule ID
  * @returns {Promise<void>}
