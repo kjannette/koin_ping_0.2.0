@@ -125,6 +125,20 @@
   margin-top: 1rem;
 }
 
+/* Locked / disabled notification channel */
+.alerts__channel-locked {
+  opacity: 0.55;
+  position: relative;
+}
+
+.alerts__channel-locked .upgrade-banner {
+  opacity: 1;
+}
+
+.alerts__channel-locked input {
+  pointer-events: none;
+}
+
 /* ── Alerts Page Responsive ──────────────────────────────── */
 
 /* Laptop: tighten the gap */

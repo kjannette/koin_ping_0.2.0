@@ -18,11 +18,12 @@ var emailRe = regexp.MustCompile(`^[^\s@]+@[^\s@]+\.[^\s@]+$`)
 
 type NotificationConfigHandler struct {
 	configs *models.NotificationConfigModel
+	users   *models.UserModel
 	cfg     *config.Config
 }
 
-func NewNotificationConfigHandler(configs *models.NotificationConfigModel, cfg *config.Config) *NotificationConfigHandler {
-	return &NotificationConfigHandler{configs: configs, cfg: cfg}
+func NewNotificationConfigHandler(configs *models.NotificationConfigModel, users *models.UserModel, cfg *config.Config) *NotificationConfigHandler {
+	return &NotificationConfigHandler{configs: configs, users: users, cfg: cfg}
 }
 
 func (h *NotificationConfigHandler) GetConfig(w http.ResponseWriter, r *http.Request) {
@@ -93,6 +94,26 @@ func (h *NotificationConfigHandler) UpdateConfig(w http.ResponseWriter, r *http.
 		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR",
 			"Invalid email address format")
 		return
+	}
+
+	user, userErr := h.users.GetByID(r.Context(), userID)
+	if userErr != nil || user == nil {
+		log.Printf("Failed to get user %s for tier check: %v", userID, userErr)
+		writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to verify account")
+		return
+	}
+
+	limits := domain.GetTierLimits(user.SubscriptionTier)
+
+	if !limits.ChannelAllowed("discord") {
+		body.DiscordWebhookURL = nil
+	}
+	if !limits.ChannelAllowed("telegram") {
+		body.TelegramBotToken = nil
+		body.TelegramChatID = nil
+	}
+	if !limits.ChannelAllowed("slack") {
+		body.SlackWebhookURL = nil
 	}
 
 	enabled := true

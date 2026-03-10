@@ -15,6 +15,10 @@
   padding: 0 1rem;
 }
 
+.subscribe__container--wide {
+  max-width: 920px;
+}
+
 .subscribe__title {
   text-align: center;
   margin-bottom: 2rem;
@@ -235,6 +239,29 @@
   font-size: 0.8rem;
   margin: 0;
   font-style: italic;
+}
+
+/* Tier limit hints */
+.subscribe__tier-hint {
+  font-size: 0.82rem;
+  color: #ffcc44;
+  margin-top: 0.5rem;
+}
+
+/* Disabled channel group */
+.subscribe__channel-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.subscribe__channel-disabled .subscribe__tier-hint {
+  pointer-events: auto;
+  opacity: 1;
+}
+
+/* Disabled checkbox row */
+.checkbox-row--disabled {
+  opacity: 0.5;
 }
 
 /* ── Subscribe Responsive ────────────────────────────────── */

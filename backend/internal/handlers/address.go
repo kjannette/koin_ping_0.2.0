@@ -3,6 +3,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"regexp"
@@ -17,10 +18,11 @@ var ethAddressRe = regexp.MustCompile(`^0x[a-fA-F0-9]{40}$`)
 
 type AddressHandler struct {
 	addresses *models.AddressModel
+	users     *models.UserModel
 }
 
-func NewAddressHandler(addresses *models.AddressModel) *AddressHandler {
-	return &AddressHandler{addresses: addresses}
+func NewAddressHandler(addresses *models.AddressModel, users *models.UserModel) *AddressHandler {
+	return &AddressHandler{addresses: addresses, users: users}
 }
 
 func (h *AddressHandler) Create(w http.ResponseWriter, r *http.Request) {
@@ -47,6 +49,28 @@ func (h *AddressHandler) Create(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid Ethereum address format")
 
 		return
+	}
+
+	user, err := h.users.GetByID(r.Context(), userID)
+	if err != nil || user == nil {
+		log.Printf("Failed to get user %s for tier check: %v", userID, err)
+		writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to verify account")
+		return
+	}
+
+	limits := domain.GetTierLimits(user.SubscriptionTier)
+	if !limits.IsUnlimitedAddresses() {
+		count, err := h.addresses.CountByUser(r.Context(), userID)
+		if err != nil {
+			log.Printf("Failed to count addresses for user %s: %v", userID, err)
+			writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to create address")
+			return
+		}
+		if count >= limits.MaxAddresses {
+			writeError(w, http.StatusForbidden, "TIER_LIMIT_REACHED",
+				fmt.Sprintf("Your %s plan allows %d address(es). Upgrade to track more.", user.SubscriptionTier, limits.MaxAddresses))
+			return
+		}
 	}
 
 	log.Printf("User %s creating address: %s", userID, body.Address)

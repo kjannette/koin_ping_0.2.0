@@ -55,14 +55,14 @@ func main() {
 		cfg.ResendAPIKey, cfg.EmailFrom, alertEventModel, notifConfigModel,
 	)
 
-	addressHandler := handlers.NewAddressHandler(addressModel)
-	alertRuleHandler := handlers.NewAlertRuleHandler(alertRuleModel, addressModel)
+	addressHandler := handlers.NewAddressHandler(addressModel, userModel)
+	alertRuleHandler := handlers.NewAlertRuleHandler(alertRuleModel, addressModel, userModel)
 	alertEventHandler := handlers.NewAlertEventHandler(alertEventModel)
-	notifConfigHandler := handlers.NewNotificationConfigHandler(notifConfigModel, cfg)
+	notifConfigHandler := handlers.NewNotificationConfigHandler(notifConfigModel, userModel, cfg)
 	emailDigestHandler := handlers.NewEmailDigestHandler(emailDigestSvc, notifConfigModel)
 	statusHandler := handlers.NewStatusHandler(checkpointModel)
 	stripeHandler := handlers.NewStripeHandler(userModel, cfg)
-	accountHandler := handlers.NewAccountHandler(userModel, cfg)
+	accountHandler := handlers.NewAccountHandler(userModel, addressModel, cfg)
 
 	authenticate := middleware.Authenticate(userModel)
 	requireSub := middleware.RequireSubscription(userModel)
@@ -91,6 +91,8 @@ func main() {
 		authenticate(http.HandlerFunc(stripeHandler.VerifyCheckoutSession)))
 	mux.Handle("POST "+b+"/stripe/create-portal-session",
 		authenticate(http.HandlerFunc(stripeHandler.CreatePortalSession)))
+	mux.Handle("POST "+b+"/stripe/activate-free",
+		authenticate(http.HandlerFunc(stripeHandler.ActivateFreeTier)))
 
 	// Account route (auth required, NO subscription required)
 	mux.Handle("GET "+b+"/user/account",

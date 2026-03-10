@@ -121,6 +121,15 @@ func (m *AlertRuleModel) UpdateThresholds(ctx context.Context, id int, minimum, 
 	return &r, nil
 }
 
+func (m *AlertRuleModel) CountDistinctTypesByAddress(ctx context.Context, addressID int) (int, error) {
+	var count int
+	err := m.pool.QueryRow(ctx,
+		`SELECT COUNT(DISTINCT type) FROM alert_rules WHERE address_id = $1`,
+		addressID,
+	).Scan(&count)
+	return count, err
+}
+
 func (m *AlertRuleModel) Remove(ctx context.Context, id int) (bool, error) {
 	tag, err := m.pool.Exec(ctx,
 		`DELETE FROM alert_rules WHERE id = $1`,

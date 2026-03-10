@@ -17,6 +17,7 @@ type contextKey string
 const (
 	UserIDKey    contextKey = "user_id"
 	UserEmailKey contextKey = "user_email"
+	UserTierKey  contextKey = "user_tier"
 )
 
 type errorResponse struct {
@@ -94,6 +95,7 @@ func Authenticate(userModel *models.UserModel) func(http.Handler) http.Handler {
 
 			ctx := context.WithValue(r.Context(), UserIDKey, user.ID)
 			ctx = context.WithValue(ctx, UserEmailKey, email)
+			ctx = context.WithValue(ctx, UserTierKey, string(user.SubscriptionTier))
 
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
@@ -149,4 +151,11 @@ func GetUserEmail(ctx context.Context) string {
 		return v
 	}
 	return ""
+}
+
+func GetUserTier(ctx context.Context) string {
+	if v, ok := ctx.Value(UserTierKey).(string); ok {
+		return v
+	}
+	return "free"
 }

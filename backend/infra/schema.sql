@@ -14,6 +14,7 @@ CREATE TABLE users (
   stripe_customer_id VARCHAR(255),
   stripe_subscription_id VARCHAR(255),
   subscription_status VARCHAR(50) DEFAULT 'none',
+  subscription_tier VARCHAR(20) DEFAULT 'free',
   subscription_created_at TIMESTAMP,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()

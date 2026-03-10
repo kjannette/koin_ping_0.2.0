@@ -1,0 +1,120 @@
+.tier-picker {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.tier-picker__card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem 1.25rem;
+  background-color: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  text-align: center;
+}
+
+.tier-picker__card--highlighted {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+.tier-picker__card--selected {
+  border-color: var(--color-success);
+  box-shadow: 0 0 0 1px var(--color-success);
+}
+
+.tier-picker__badge {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--color-primary);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 12px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.tier-picker__name {
+  margin-bottom: 0.5rem;
+  font-size: 1.05rem;
+  color: var(--color-text);
+}
+
+.tier-picker__price {
+  margin-bottom: 1.25rem;
+}
+
+.tier-picker__amount {
+  font-size: 2rem;
+  font-weight: 700;
+  color: white;
+}
+
+.tier-picker__period {
+  font-size: 0.85rem;
+  color: var(--color-text-dimmed);
+}
+
+.tier-picker__features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.25rem;
+  text-align: left;
+  flex-grow: 1;
+}
+
+.tier-picker__feature {
+  padding: 0.3rem 0;
+  font-size: 0.82rem;
+  color: var(--color-text-label);
+}
+
+.tier-picker__feature--disabled {
+  color: var(--color-text-dimmed);
+  opacity: 0.55;
+}
+
+.tier-picker__check {
+  color: var(--color-primary);
+  font-weight: bold;
+  margin-right: 0.4rem;
+}
+
+.tier-picker__dash {
+  margin-right: 0.4rem;
+}
+
+.tier-picker__btn {
+  width: 100%;
+  padding: 0.6rem;
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+}
+
+.tier-picker__btn:hover {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.tier-picker__btn--selected {
+  background-color: var(--color-success);
+  border-color: var(--color-success);
+  color: white;
+}
+
+@media (max-width: 768px) {
+  .tier-picker {
+    grid-template-columns: 1fr;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+}

@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
+import { useAuth } from "../../contexts/AuthContext";
 import AlertForm from "../../components/AlertForm";
 import Button from "../../components/Button";
 import Input from "../../components/Input";
+import UpgradeBanner from "../../components/UpgradeBanner";
 import { getAddresses } from "../../api/addresses";
 import {
   getAlerts,
@@ -20,6 +22,8 @@ import {
 import "./Alerts.css";
 
 export default function Alerts() {
+  const { tierLimits, userTier } = useAuth();
+
   const [addresses, setAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
   const [alerts, setAlerts] = useState([]);
@@ -42,6 +46,21 @@ export default function Alerts() {
 
   const [openAccordions, setOpenAccordions] = useState({});
   const [thresholdEdits, setThresholdEdits] = useState({});
+
+  const allowedChannels = tierLimits.allowed_channels || ["email"];
+  const canTelegram = allowedChannels.includes("telegram");
+  const canDiscord = allowedChannels.includes("discord");
+  const canSlack = allowedChannels.includes("slack");
+
+  const maxAlertTypes = tierLimits.max_alert_types;
+  const isUnlimitedAlerts = maxAlertTypes === -1;
+
+  function distinctAlertTypeCount() {
+    const types = new Set(alerts.map((a) => a.type));
+    return types.size;
+  }
+
+  const atAlertLimit = !isUnlimitedAlerts && distinctAlertTypeCount() >= maxAlertTypes;
 
   function toggleAccordion(alertId) {
     setOpenAccordions((prev) => ({ ...prev, [alertId]: !prev[alertId] }));
@@ -209,11 +228,11 @@ export default function Alerts() {
 
       const config = {
         notification_enabled: notificationEnabled,
-        discord_webhook_url: discordWebhookUrl || null,
-        telegram_bot_token: telegramBotToken || null,
-        telegram_chat_id: telegramChatId || null,
+        discord_webhook_url: canDiscord ? (discordWebhookUrl || null) : null,
+        telegram_bot_token: canTelegram ? (telegramBotToken || null) : null,
+        telegram_chat_id: canTelegram ? (telegramChatId || null) : null,
         email: email || null,
-        slack_webhook_url: slackWebhookUrl || null,
+        slack_webhook_url: canSlack ? (slackWebhookUrl || null) : null,
       };
 
       await updateNotificationConfig(config);
@@ -357,10 +376,18 @@ export default function Alerts() {
                 </div>
               </div>
 
-              <div className="mb-xl">
-                <h3>Create New Alert</h3>
-                <AlertForm onSubmit={handleAlertSubmit} />
-              </div>
+              {atAlertLimit && userTier !== "pro" && (
+                <UpgradeBanner
+                  message={`Your ${userTier} plan allows ${maxAlertTypes} alert type${maxAlertTypes !== 1 ? "s" : ""} per address. Upgrade for more.`}
+                />
+              )}
+
+              {!atAlertLimit && (
+                <div className="mb-xl">
+                  <h3>Create New Alert</h3>
+                  <AlertForm onSubmit={handleAlertSubmit} />
+                </div>
+              )}
 
               <div>
                 <h3>Active Alert Rules</h3>
@@ -540,19 +567,24 @@ export default function Alerts() {
           {notificationEnabled && (
             <>
               {/* Telegram */}
-              <div className="section">
+              <div className={`section${!canTelegram ? " alerts__channel-locked" : ""}`}>
                 <h3 className="mt-0 mb-md">Telegram</h3>
+                {!canTelegram && (
+                  <UpgradeBanner message="Upgrade to Premium to enable Telegram alerts" />
+                )}
                 <Input
                   label="Bot Token"
                   value={telegramBotToken}
                   onChange={setTelegramBotToken}
                   placeholder="123456789:ABCdefGHIjklMNOpqrSTUvwxYZ"
+                  disabled={!canTelegram}
                 />
                 <Input
                   label="Chat ID"
                   value={telegramChatId}
                   onChange={setTelegramChatId}
                   placeholder="-1001234567890"
+                  disabled={!canTelegram}
                 />
                 <a
                   href="https://core.telegram.org/bots#how-do-i-create-a-bot"
@@ -597,13 +629,17 @@ export default function Alerts() {
               </div>
 
               {/* Discord */}
-              <div className="section">
+              <div className={`section${!canDiscord ? " alerts__channel-locked" : ""}`}>
                 <h3 className="mt-0 mb-md">Discord</h3>
+                {!canDiscord && (
+                  <UpgradeBanner message="Upgrade to Premium to enable Discord alerts" />
+                )}
                 <Input
                   label="Discord Webhook URL"
                   value={discordWebhookUrl}
                   onChange={setDiscordWebhookUrl}
                   placeholder="https://discord.com/api/webhooks/..."
+                  disabled={!canDiscord}
                 />
                 <a
                   href="https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks"
@@ -616,13 +652,17 @@ export default function Alerts() {
               </div>
 
               {/* Slack */}
-              <div className="section">
+              <div className={`section${!canSlack ? " alerts__channel-locked" : ""}`}>
                 <h3 className="mt-0 mb-md">Slack</h3>
+                {!canSlack && (
+                  <UpgradeBanner message="Upgrade to Pro to enable Slack alerts" />
+                )}
                 <Input
                   label="Slack Webhook URL"
                   value={slackWebhookUrl}
                   onChange={setSlackWebhookUrl}
                   placeholder="https://hooks.slack.com/services/..."
+                  disabled={!canSlack}
                 />
                 <a
                   href="https://api.slack.com/messaging/webhooks"

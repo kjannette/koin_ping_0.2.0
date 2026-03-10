@@ -1,14 +1,21 @@
 import { useState, useEffect } from "react";
+import { useAuth } from "../../contexts/AuthContext";
 import AddressForm from "../../components/AddressForm";
+import UpgradeBanner from "../../components/UpgradeBanner";
 import { getAddresses, createAddress, deleteAddress, updateAddress } from "../../api/addresses";
 import "./Addresses.css";
 
 export default function Addresses() {
+  const { tierLimits, refreshAccount } = useAuth();
   const [addresses, setAddresses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [editLabel, setEditLabel] = useState("");
+
+  const maxAddresses = tierLimits.max_addresses;
+  const isUnlimited = maxAddresses === -1;
+  const atLimit = !isUnlimited && addresses.length >= maxAddresses;
 
   useEffect(() => {
     async function fetchAddresses() {
@@ -32,6 +39,7 @@ export default function Addresses() {
       const newAddress = await createAddress(data);
       setAddresses((prev) => [...prev, newAddress]);
       setError(null);
+      refreshAccount();
     } catch (err) {
       setError(err.message);
       console.error("Failed to create address:", err);
@@ -47,6 +55,7 @@ export default function Addresses() {
       await deleteAddress(id);
       setAddresses((prev) => prev.filter((a) => a.id !== id));
       setError(null);
+      refreshAccount();
     } catch (err) {
       setError(err.message);
       console.error("Failed to delete address:", err);
@@ -80,9 +89,17 @@ export default function Addresses() {
     <div className="page">
       <h1>Add Addresses to Track</h1>
 
-      <div className="mb-xl">
-        <AddressForm onSubmit={handleAddressSubmit} />
-      </div>
+      {atLimit && (
+        <UpgradeBanner
+          message={`Your plan allows ${maxAddresses} address${maxAddresses !== 1 ? "es" : ""}. Upgrade to track more.`}
+        />
+      )}
+
+      {!atLimit && (
+        <div className="mb-xl">
+          <AddressForm onSubmit={handleAddressSubmit} />
+        </div>
+      )}
 
       <div>
         <h2>Existing Tracked Addresses</h2>

@@ -2,17 +2,77 @@ package domain
 
 import "time"
 
+type SubscriptionTier string
+
+const (
+	TierFree    SubscriptionTier = "free"
+	TierPremium SubscriptionTier = "premium"
+	TierPro     SubscriptionTier = "pro"
+)
+
+func IsValidTier(t string) bool {
+	switch SubscriptionTier(t) {
+	case TierFree, TierPremium, TierPro:
+		return true
+	}
+	return false
+}
+
+const unlimitedLimit = -1
+
+type TierLimits struct {
+	MaxAddresses    int      `json:"max_addresses"`
+	MaxAlertTypes   int      `json:"max_alert_types"`
+	AllowedChannels []string `json:"allowed_channels"`
+}
+
+func GetTierLimits(tier SubscriptionTier) TierLimits {
+	switch tier {
+	case TierPremium:
+		return TierLimits{
+			MaxAddresses:    3,
+			MaxAlertTypes:   2,
+			AllowedChannels: []string{"email", "discord", "telegram"},
+		}
+	case TierPro:
+		return TierLimits{
+			MaxAddresses:    unlimitedLimit,
+			MaxAlertTypes:   unlimitedLimit,
+			AllowedChannels: []string{"email", "discord", "telegram", "slack"},
+		}
+	default:
+		return TierLimits{
+			MaxAddresses:    1,
+			MaxAlertTypes:   1,
+			AllowedChannels: []string{"email"},
+		}
+	}
+}
+
+func (l TierLimits) IsUnlimitedAddresses() bool  { return l.MaxAddresses == unlimitedLimit }
+func (l TierLimits) IsUnlimitedAlertTypes() bool  { return l.MaxAlertTypes == unlimitedLimit }
+
+func (l TierLimits) ChannelAllowed(channel string) bool {
+	for _, c := range l.AllowedChannels {
+		if c == channel {
+			return true
+		}
+	}
+	return false
+}
+
 type User struct {
-	ID                    string     `json:"id"`
-	FirebaseUID           string     `json:"-"`
-	Email                 string     `json:"email"`
-	DisplayName           *string    `json:"display_name"`           //nolint:tagliatelle
-	StripeCustomerID      *string    `json:"-"`
-	StripeSubscriptionID  *string    `json:"-"`
-	SubscriptionStatus    string     `json:"subscription_status"`    //nolint:tagliatelle
-	SubscriptionCreatedAt *time.Time `json:"subscription_created_at,omitempty"` //nolint:tagliatelle
-	CreatedAt             time.Time  `json:"created_at"`             //nolint:tagliatelle
-	UpdatedAt             time.Time  `json:"updated_at"`             //nolint:tagliatelle
+	ID                    string           `json:"id"`
+	FirebaseUID           string           `json:"-"`
+	Email                 string           `json:"email"`
+	DisplayName           *string          `json:"display_name"`           //nolint:tagliatelle
+	StripeCustomerID      *string          `json:"-"`
+	StripeSubscriptionID  *string          `json:"-"`
+	SubscriptionStatus    string           `json:"subscription_status"`    //nolint:tagliatelle
+	SubscriptionTier      SubscriptionTier `json:"subscription_tier"`      //nolint:tagliatelle
+	SubscriptionCreatedAt *time.Time       `json:"subscription_created_at,omitempty"` //nolint:tagliatelle
+	CreatedAt             time.Time        `json:"created_at"`             //nolint:tagliatelle
+	UpdatedAt             time.Time        `json:"updated_at"`             //nolint:tagliatelle
 }
 
 type Address struct {

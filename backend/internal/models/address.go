@@ -125,6 +125,15 @@ func (m *AddressModel) UpdateLabel(ctx context.Context, id int, userID string, l
 	return &a, nil
 }
 
+func (m *AddressModel) CountByUser(ctx context.Context, userID string) (int, error) {
+	var count int
+	err := m.pool.QueryRow(ctx,
+		`SELECT COUNT(*) FROM addresses WHERE user_id = $1`,
+		userID,
+	).Scan(&count)
+	return count, err
+}
+
 func (m *AddressModel) Remove(ctx context.Context, id int, userID string) (bool, error) {
 	tag, err := m.pool.Exec(ctx,
 		`DELETE FROM addresses WHERE id = $1 AND user_id = $2`,

@@ -1,10 +1,18 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { updatePassword } from "firebase/auth";
 import { auth } from "../../firebase/config";
 import { getAccount, createPortalSession } from "../../api/account";
 import "./Account.css";
 
+const TIER_LABELS = {
+  free: "Free Trial",
+  premium: "Premium",
+  pro: "Pro",
+};
+
 export default function Account() {
+  const navigate = useNavigate();
   const [account, setAccount] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -78,6 +86,7 @@ export default function Account() {
     return <div className="page text-error">Error: {error}</div>;
   }
 
+  const tier = account.subscription_tier || "free";
   const isCanceling = account.cancel_at_period_end;
   const statusLabel = isCanceling
     ? "Canceling"
@@ -85,6 +94,9 @@ export default function Account() {
       ? "Active"
       : account.subscription_status.charAt(0).toUpperCase() +
         account.subscription_status.slice(1);
+
+  const canUpgrade = tier === "free" || tier === "premium";
+  const hasPaidSub = tier !== "free";
 
   return (
     <div className="page account-page">
@@ -114,7 +126,7 @@ export default function Account() {
         <h2 className="account__section-title">Subscription</h2>
         <div className="account__row">
           <span className="account__label">Plan</span>
-          <span className="account__value">{account.subscription_plan}</span>
+          <span className="account__value">{TIER_LABELS[tier] || account.subscription_plan}</span>
         </div>
         <div className="account__row">
           <span className="account__label">Status</span>
@@ -149,15 +161,27 @@ export default function Account() {
         )}
 
         <div className="account__portal-section">
-          <button
-            onClick={handleManageSubscription}
-            disabled={portalLoading}
-            className="btn btn--ghost"
-          >
-            {portalLoading ? "Redirecting..." : "Manage Subscription"}
-          </button>
+          {canUpgrade && (
+            <button
+              onClick={() => navigate("/subscribe")}
+              className="btn btn--primary"
+            >
+              Upgrade Plan
+            </button>
+          )}
+          {hasPaidSub && (
+            <button
+              onClick={handleManageSubscription}
+              disabled={portalLoading}
+              className="btn btn--ghost"
+            >
+              {portalLoading ? "Redirecting..." : "Manage Subscription"}
+            </button>
+          )}
           <p className="text-dimmed text-sm account__portal-hint">
-            Cancel subscription, update payment method, or view invoices via Stripe.
+            {hasPaidSub
+              ? "Cancel subscription, update payment method, or view invoices via Stripe."
+              : "Upgrade to unlock more addresses, alert types, and notification channels."}
           </p>
         </div>
       </div>

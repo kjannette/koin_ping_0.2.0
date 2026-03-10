@@ -19,10 +19,11 @@ var errThresholdFormat = errors.New("unsupported threshold format")
 type AlertRuleHandler struct {
 	alertRules *models.AlertRuleModel
 	addresses  *models.AddressModel
+	users      *models.UserModel
 }
 
-func NewAlertRuleHandler(alertRules *models.AlertRuleModel, addresses *models.AddressModel) *AlertRuleHandler {
-	return &AlertRuleHandler{alertRules: alertRules, addresses: addresses}
+func NewAlertRuleHandler(alertRules *models.AlertRuleModel, addresses *models.AddressModel, users *models.UserModel) *AlertRuleHandler {
+	return &AlertRuleHandler{alertRules: alertRules, addresses: addresses, users: users}
 }
 
 func (h *AlertRuleHandler) Create(w http.ResponseWriter, r *http.Request) {
@@ -130,6 +131,28 @@ func (h *AlertRuleHandler) Create(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "NOT_FOUND", "Address not found")
 
 		return
+	}
+
+	user, userErr := h.users.GetByID(r.Context(), userID)
+	if userErr != nil || user == nil {
+		log.Printf("Failed to get user %s for tier check: %v", userID, userErr)
+		writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to verify account")
+		return
+	}
+
+	limits := domain.GetTierLimits(user.SubscriptionTier)
+	if !limits.IsUnlimitedAlertTypes() {
+		typeCount, countErr := h.alertRules.CountDistinctTypesByAddress(r.Context(), addressID)
+		if countErr != nil {
+			log.Printf("Failed to count alert types for address %d: %v", addressID, countErr)
+			writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to create alert rule")
+			return
+		}
+		if typeCount >= limits.MaxAlertTypes {
+			writeError(w, http.StatusForbidden, "TIER_LIMIT_REACHED",
+				fmt.Sprintf("Your %s plan allows %d alert type(s) per address. Upgrade for more.", user.SubscriptionTier, limits.MaxAlertTypes))
+			return
+		}
 	}
 
 	newAlert, err := h.alertRules.Create(r.Context(), addressID, alertType, threshold, minimum, maximum)

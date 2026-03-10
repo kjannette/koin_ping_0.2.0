@@ -7,12 +7,20 @@ import {
   updateNotificationConfig,
   testNotificationChannels,
 } from "../../api/notificationConfig";
-import { createCheckoutSession, getSubscriptionStatus, verifyCheckoutSession } from "../../api/stripe";
+import { createCheckoutSession, getSubscriptionStatus, verifyCheckoutSession, activateFreeTier } from "../../api/stripe";
 import Input from "../../components/Input";
 import Button from "../../components/Button";
+import TierPicker from "../../components/TierPicker";
 import "./Subscribe.css";
 
+const TIER_LIMITS = {
+  free:    { maxAlertTypes: 1, channels: ["email"] },
+  premium: { maxAlertTypes: 2, channels: ["email", "discord", "telegram"] },
+  pro:     { maxAlertTypes: 4, channels: ["email", "discord", "telegram", "slack"] },
+};
+
 const STEPS = [
+  "Choose Plan",
   "Create Account",
   "Add Wallet",
   "Alert Rules",
@@ -33,6 +41,7 @@ export default function Subscribe() {
   const [testLoading, setTestLoading] = useState(false);
 
   const [data, setData] = useState({
+    selectedTier: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -56,6 +65,8 @@ export default function Subscribe() {
     setData((prev) => ({ ...prev, [field]: value }));
   }
 
+  const tierLimits = TIER_LIMITS[data.selectedTier] || TIER_LIMITS.free;
+
   useEffect(() => {
     if (!currentUser) return;
     getAddresses()
@@ -67,7 +78,6 @@ export default function Subscribe() {
       .catch(() => { });
   }, [currentUser, navigate]);
 
-  // Handle Stripe redirect back from checkout
   useEffect(() => {
     if (!currentUser) return;
     const payment = searchParams.get("payment");
@@ -77,23 +87,32 @@ export default function Subscribe() {
       setLoading(true);
       verifyCheckoutSession(sessionId)
         .then(() => {
-          setStep(2);
+          setStep(3);
         })
         .catch((err) => {
           setError("Payment verification failed: " + err.message);
-          setStep(1);
+          setStep(2);
         })
         .finally(() => setLoading(false));
     } else if (payment === "cancelled") {
       setSearchParams({}, { replace: true });
-      setStep(1);
+      setStep(2);
       setError("Payment was cancelled. Please try again.");
     }
   }, [currentUser, searchParams, setSearchParams]);
 
   // ── Step handlers ─────────────────────────────────────────────────────────
 
-  async function handleStep1() {
+  function handleStep1() {
+    setError("");
+    if (!data.selectedTier) {
+      setError("Please select a plan to continue");
+      return;
+    }
+    setStep(2);
+  }
+
+  async function handleStep2() {
     setError("");
     if (!data.email || !data.password || !data.confirmPassword) {
       setError("Please fill in all fields");
@@ -112,12 +131,19 @@ export default function Subscribe() {
       if (!currentUser) {
         await signup(data.email, data.password);
       }
-      const status = await getSubscriptionStatus();
-      if (status.subscription_status === "active" || status.subscription_status === "trialing") {
-        setStep(2);
+
+      if (data.selectedTier === "free") {
+        await activateFreeTier();
+        setStep(3);
         return;
       }
-      const { url } = await createCheckoutSession();
+
+      const status = await getSubscriptionStatus();
+      if (status.subscription_status === "active" || status.subscription_status === "trialing") {
+        setStep(3);
+        return;
+      }
+      const { url } = await createCheckoutSession(data.selectedTier);
       window.location.href = url;
     } catch (err) {
       if (err.code === "auth/email-already-in-use") {
@@ -133,7 +159,7 @@ export default function Subscribe() {
     }
   }
 
-  async function handleStep2() {
+  async function handleStep3() {
     setError("");
     if (!data.walletAddress) {
       setError("Please enter a wallet address");
@@ -150,7 +176,7 @@ export default function Subscribe() {
         label: data.walletLabel || undefined,
       });
       set("createdAddressId", created.id);
-      setStep(3);
+      setStep(4);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -158,7 +184,7 @@ export default function Subscribe() {
     }
   }
 
-  async function handleStep3() {
+  async function handleStep4() {
     setError("");
     const rules = [];
     if (data.alertIncomingTx) rules.push({ type: "incoming_tx" });
@@ -179,7 +205,7 @@ export default function Subscribe() {
     }
 
     if (rules.length === 0) {
-      setStep(4);
+      setStep(5);
       return;
     }
 
@@ -191,7 +217,7 @@ export default function Subscribe() {
         created.push(result);
       }
       set("alertsCreated", created);
-      setStep(4);
+      setStep(5);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -199,12 +225,12 @@ export default function Subscribe() {
     }
   }
 
-  async function handleStep4() {
+  async function handleStep5() {
     setError("");
     const hasAny =
       data.discordWebhookUrl || data.slackWebhookUrl || data.notificationEmail;
     if (!hasAny) {
-      setStep(5);
+      setStep(6);
       return;
     }
     try {
@@ -216,7 +242,7 @@ export default function Subscribe() {
         email: data.notificationEmail || undefined,
       });
       set("notificationConfigured", true);
-      setStep(5);
+      setStep(6);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -235,6 +261,21 @@ export default function Subscribe() {
     } finally {
       setTestLoading(false);
     }
+  }
+
+  // ── Alert type limit helpers ──────────────────────────────────────────────
+
+  function countSelectedAlerts() {
+    let count = 0;
+    if (data.alertIncomingTx) count++;
+    if (data.alertOutgoingTx) count++;
+    if (data.alertLargeTransfer) count++;
+    if (data.alertBalanceBelow) count++;
+    return count;
+  }
+
+  function canSelectMoreAlerts() {
+    return tierLimits.maxAlertTypes > countSelectedAlerts();
   }
 
   // ── Progress bar ──────────────────────────────────────────────────────────
@@ -284,7 +325,22 @@ export default function Subscribe() {
 
   // ── Step content ──────────────────────────────────────────────────────────
 
-  function Step1() {
+  function StepChoosePlan() {
+    return (
+      <>
+        <h2 className="mb-sm">Choose your plan</h2>
+        <p className="subscribe__subtitle">
+          Select the plan that works best for you. You can upgrade anytime.
+        </p>
+        <TierPicker
+          onSelect={(tier) => set("selectedTier", tier)}
+          selectedTier={data.selectedTier}
+        />
+      </>
+    );
+  }
+
+  function StepCreateAccount() {
     return (
       <>
         <h2 className="mb-lg">Create your account</h2>
@@ -317,7 +373,7 @@ export default function Subscribe() {
     );
   }
 
-  function Step2() {
+  function StepAddWallet() {
     return (
       <>
         <h2 className="mb-sm">Add a wallet address</h2>
@@ -343,28 +399,35 @@ export default function Subscribe() {
     );
   }
 
-  function Step3() {
+  function StepAlertRules() {
+    const atLimit = !canSelectMoreAlerts();
+    const maxTypes = tierLimits.maxAlertTypes;
+
     return (
       <>
         <h2 className="mb-sm">Configure alert rules</h2>
         <p className="subscribe__subtitle">
-          Choose which events trigger notifications. You can change these later.
+          Choose which events trigger notifications ({countSelectedAlerts()}/{maxTypes} selected).
+          You can change these later.
         </p>
 
         <CheckboxRow
           checked={data.alertIncomingTx}
           onChange={(v) => set("alertIncomingTx", v)}
           label="Incoming transaction"
+          disabled={!data.alertIncomingTx && atLimit}
         />
         <CheckboxRow
           checked={data.alertOutgoingTx}
           onChange={(v) => set("alertOutgoingTx", v)}
           label="Outgoing transaction"
+          disabled={!data.alertOutgoingTx && atLimit}
         />
         <CheckboxRow
           checked={data.alertLargeTransfer}
           onChange={(v) => set("alertLargeTransfer", v)}
           label="Large transfer"
+          disabled={!data.alertLargeTransfer && atLimit}
         >
           {data.alertLargeTransfer && (
             <div className="checkbox-row__nested">
@@ -384,6 +447,7 @@ export default function Subscribe() {
           checked={data.alertBalanceBelow}
           onChange={(v) => set("alertBalanceBelow", v)}
           label="Balance below"
+          disabled={!data.alertBalanceBelow && atLimit}
         >
           {data.alertBalanceBelow && (
             <div className="checkbox-row__nested">
@@ -399,11 +463,21 @@ export default function Subscribe() {
             </div>
           )}
         </CheckboxRow>
+
+        {atLimit && data.selectedTier !== "pro" && (
+          <p className="subscribe__tier-hint">
+            Your {data.selectedTier} plan allows {maxTypes} alert type{maxTypes !== 1 ? "s" : ""} per address. Upgrade for more.
+          </p>
+        )}
       </>
     );
   }
 
-  function Step4() {
+  function StepNotifications() {
+    const channels = tierLimits.channels;
+    const canDiscord = channels.includes("discord");
+    const canSlack = channels.includes("slack");
+
     return (
       <>
         <h2 className="mb-sm">Set up notifications</h2>
@@ -411,7 +485,17 @@ export default function Subscribe() {
           Add at least one channel so you receive alerts. All fields are optional.
         </p>
 
-        <div className="mb-md">
+        <Input
+          label="Email address for alerts"
+          type="email"
+          value={data.notificationEmail}
+          onChange={(v) => set("notificationEmail", v)}
+          disabled={loading}
+          placeholder="you@example.com"
+          className="form-field--last"
+        />
+
+        <div className={`mb-md${!canDiscord ? " subscribe__channel-disabled" : ""}`}>
           <label className="form-label">
             Discord Webhook URL{" "}
             <a
@@ -428,12 +512,15 @@ export default function Subscribe() {
             type="url"
             value={data.discordWebhookUrl}
             onChange={(v) => set("discordWebhookUrl", v)}
-            disabled={loading}
+            disabled={loading || !canDiscord}
             placeholder="https://discord.com/api/webhooks/..."
           />
+          {!canDiscord && (
+            <p className="subscribe__tier-hint">Upgrade to Premium to enable Discord alerts</p>
+          )}
         </div>
 
-        <div className="mb-md">
+        <div className={`mb-md${!canSlack ? " subscribe__channel-disabled" : ""}`}>
           <label className="form-label">
             Slack Webhook URL{" "}
             <a
@@ -450,25 +537,18 @@ export default function Subscribe() {
             type="url"
             value={data.slackWebhookUrl}
             onChange={(v) => set("slackWebhookUrl", v)}
-            disabled={loading}
+            disabled={loading || !canSlack}
             placeholder="https://hooks.slack.com/services/..."
           />
+          {!canSlack && (
+            <p className="subscribe__tier-hint">Upgrade to Pro to enable Slack alerts</p>
+          )}
         </div>
-
-        <Input
-          label="Email address for alerts"
-          type="email"
-          value={data.notificationEmail}
-          onChange={(v) => set("notificationEmail", v)}
-          disabled={loading}
-          placeholder="you@example.com"
-          className="form-field--last"
-        />
       </>
     );
   }
 
-  function Step5() {
+  function StepDone() {
     const alertCount = data.alertsCreated.length;
     const hasNotif = data.notificationConfigured;
 
@@ -479,6 +559,12 @@ export default function Subscribe() {
         <div className="subscribe__summary">
           <p className="subscribe__summary-title">Summary</p>
           <ul className="subscribe__summary-list">
+            <li>
+              Plan:{" "}
+              <span className="text-white">
+                {data.selectedTier === "pro" ? "Pro" : data.selectedTier === "premium" ? "Premium" : "Free Trial"}
+              </span>
+            </li>
             <li>
               Wallet address added:{" "}
               <span className="text-mono text-white-sm">
@@ -542,15 +628,16 @@ export default function Subscribe() {
 
   // ── Shared helpers ────────────────────────────────────────────────────────
 
-  function CheckboxRow({ checked, onChange, label, children }) {
+  function CheckboxRow({ checked, onChange, label, children, disabled }) {
     return (
-      <div className="checkbox-row">
+      <div className={`checkbox-row${disabled ? " checkbox-row--disabled" : ""}`}>
         <label className="checkbox-row__label">
           <input
             type="checkbox"
             checked={checked}
             onChange={(e) => onChange(e.target.checked)}
             className="checkbox-row__input"
+            disabled={disabled}
           />
           {label}
         </label>
@@ -562,17 +649,18 @@ export default function Subscribe() {
   // ── Footer navigation ─────────────────────────────────────────────────────
 
   function Footer() {
-    if (step === 5) return null;
+    if (step === 6) return null;
 
-    const canSkip = step === 3 || step === 4;
-    const canBack = step > 2;
+    const canSkip = step === 4 || step === 5;
+    const canBack = step > 1 && step <= 5;
 
     async function handleNext() {
       setSkipWarning("");
-      if (step === 1) await handleStep1();
+      if (step === 1) handleStep1();
       else if (step === 2) await handleStep2();
       else if (step === 3) await handleStep3();
       else if (step === 4) await handleStep4();
+      else if (step === 5) await handleStep5();
     }
 
     function handleSkip() {
@@ -588,10 +676,14 @@ export default function Subscribe() {
     }
 
     const nextLabel = step === 1
-      ? "Create Account & Subscribe"
-      : step === 4
-        ? "Finish"
-        : "Next →";
+      ? "Continue"
+      : step === 2
+        ? data.selectedTier === "free"
+          ? "Create Account"
+          : "Create Account & Subscribe"
+        : step === 5
+          ? "Finish"
+          : "Next →";
 
     return (
       <div className="subscribe__footer">
@@ -619,7 +711,7 @@ export default function Subscribe() {
           )}
           <Button
             onClick={handleNext}
-            disabled={loading}
+            disabled={loading || (step === 1 && !data.selectedTier)}
             className="text-bold"
           >
             {loading ? "Please wait..." : nextLabel}
@@ -632,16 +724,17 @@ export default function Subscribe() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   const stepContent = {
-    1: Step1(),
-    2: Step2(),
-    3: Step3(),
-    4: Step4(),
-    5: Step5(),
+    1: StepChoosePlan(),
+    2: StepCreateAccount(),
+    3: StepAddWallet(),
+    4: StepAlertRules(),
+    5: StepNotifications(),
+    6: StepDone(),
   };
 
   return (
     <div className="subscribe">
-      <div className="subscribe__container">
+      <div className={`subscribe__container${step === 1 ? " subscribe__container--wide" : ""}`}>
         <h1 className="subscribe__title">Koin Ping</h1>
 
         {ProgressBar()}
@@ -659,7 +752,7 @@ export default function Subscribe() {
           {Footer()}
         </div>
 
-        {step === 1 && (
+        {step === 2 && (
           <p className="subscribe__login-link">
             Already have an account?{" "}
             <a href="/login">Log in here</a>

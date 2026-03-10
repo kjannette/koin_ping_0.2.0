@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	"github.com/stripe/stripe-go/v82/webhook"
 
 	"github.com/kjannette/koin-ping/backend/internal/config"
+	"github.com/kjannette/koin-ping/backend/internal/domain"
 	"github.com/kjannette/koin-ping/backend/internal/middleware"
 	"github.com/kjannette/koin-ping/backend/internal/models"
 )
@@ -28,9 +30,44 @@ func NewStripeHandler(users *models.UserModel, cfg *config.Config) *StripeHandle
 	return &StripeHandler{users: users, cfg: cfg}
 }
 
-// CreateCheckoutSession creates a Stripe Checkout session for the monthly subscription.
+func (h *StripeHandler) priceIDForTier(tier domain.SubscriptionTier) (string, error) {
+	switch tier {
+	case domain.TierPremium:
+		return h.cfg.StripePriceIDPremium, nil
+	case domain.TierPro:
+		return h.cfg.StripePriceIDPro, nil
+	default:
+		return "", fmt.Errorf("no Stripe price for tier %q", tier) //nolint:err113
+	}
+}
+
+// CreateCheckoutSession creates a Stripe Checkout session for the selected tier.
 func (h *StripeHandler) CreateCheckoutSession(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r.Context())
+
+	var body struct {
+		Tier string `json:"tier"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "BAD_REQUEST", "Invalid request body")
+		return
+	}
+
+	if body.Tier == "" {
+		body.Tier = "premium"
+	}
+
+	tier := domain.SubscriptionTier(body.Tier)
+	if tier != domain.TierPremium && tier != domain.TierPro {
+		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Tier must be 'premium' or 'pro'")
+		return
+	}
+
+	priceID, err := h.priceIDForTier(tier)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error())
+		return
+	}
 
 	user, err := h.users.GetByID(r.Context(), userID)
 	if err != nil || user == nil {
@@ -43,7 +80,7 @@ func (h *StripeHandler) CreateCheckoutSession(w http.ResponseWriter, r *http.Req
 		Mode: stripe.String(string(stripe.CheckoutSessionModeSubscription)),
 		LineItems: []*stripe.CheckoutSessionLineItemParams{
 			{
-				Price:    stripe.String(h.cfg.StripePriceID),
+				Price:    stripe.String(priceID),
 				Quantity: stripe.Int64(1),
 			},
 		},
@@ -52,6 +89,8 @@ func (h *StripeHandler) CreateCheckoutSession(w http.ResponseWriter, r *http.Req
 		ClientReferenceID: stripe.String(userID),
 		CustomerEmail:     stripe.String(user.Email),
 	}
+
+	params.AddMetadata("tier", string(tier))
 
 	if user.StripeCustomerID != nil && *user.StripeCustomerID != "" {
 		params.Customer = user.StripeCustomerID
@@ -80,14 +119,14 @@ func (h *StripeHandler) GetSubscriptionStatus(w http.ResponseWriter, r *http.Req
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
-		"subscription_status":     user.SubscriptionStatus,
+		"subscription_status": user.SubscriptionStatus,
+		"subscription_tier":   user.SubscriptionTier,
 		"subscription_created_at": user.SubscriptionCreatedAt,
 	})
 }
 
 // VerifyCheckoutSession retrieves a completed checkout session from Stripe,
 // confirms payment, and activates the user's subscription in the database.
-// This is the primary activation path; webhooks serve as a backup.
 func (h *StripeHandler) VerifyCheckoutSession(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r.Context())
 
@@ -116,6 +155,11 @@ func (h *StripeHandler) VerifyCheckoutSession(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	tier := domain.TierPremium
+	if t, ok := s.Metadata["tier"]; ok && domain.IsValidTier(t) {
+		tier = domain.SubscriptionTier(t)
+	}
+
 	customerID := ""
 	if s.Customer != nil {
 		customerID = s.Customer.ID
@@ -131,13 +175,33 @@ func (h *StripeHandler) VerifyCheckoutSession(w http.ResponseWriter, r *http.Req
 		}
 	}
 	if subscriptionID != "" && customerID != "" {
-		if err := h.users.ActivateSubscription(r.Context(), customerID, subscriptionID, "active"); err != nil {
+		if err := h.users.ActivateSubscription(r.Context(), customerID, subscriptionID, "active", tier); err != nil {
 			log.Printf("VerifyCheckout: failed to activate subscription: %v", err)
 		}
 	}
 
-	log.Printf("Checkout verified for user %s, customer %s, subscription %s", userID, customerID, subscriptionID)
-	writeJSON(w, http.StatusOK, map[string]string{"subscription_status": "active"})
+	log.Printf("Checkout verified for user %s, customer %s, subscription %s, tier %s", userID, customerID, subscriptionID, tier)
+	writeJSON(w, http.StatusOK, map[string]string{
+		"subscription_status": "active",
+		"subscription_tier":   string(tier),
+	})
+}
+
+// ActivateFreeTier sets the user to the free tier without Stripe involvement.
+func (h *StripeHandler) ActivateFreeTier(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r.Context())
+
+	if err := h.users.ActivateFreeTier(r.Context(), userID); err != nil {
+		log.Printf("ActivateFreeTier: failed for user %s: %v", userID, err)
+		writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to activate free tier")
+		return
+	}
+
+	log.Printf("Free tier activated for user %s", userID)
+	writeJSON(w, http.StatusOK, map[string]string{
+		"subscription_status": "active",
+		"subscription_tier":   "free",
+	})
 }
 
 // CreatePortalSession creates a Stripe Billing Portal session so the user can
@@ -173,7 +237,6 @@ func (h *StripeHandler) CreatePortalSession(w http.ResponseWriter, r *http.Reque
 }
 
 // HandleWebhook processes incoming Stripe webhook events.
-// This endpoint must NOT require authentication (Stripe calls it directly).
 func (h *StripeHandler) HandleWebhook(w http.ResponseWriter, r *http.Request) {
 	payload, err := io.ReadAll(io.LimitReader(r.Body, webhookMaxBodyBytes))
 	if err != nil {
@@ -217,6 +280,11 @@ func (h *StripeHandler) handleCheckoutCompleted(r *http.Request, event stripe.Ev
 		return
 	}
 
+	tier := domain.TierPremium
+	if t, ok := session.Metadata["tier"]; ok && domain.IsValidTier(t) {
+		tier = domain.SubscriptionTier(t)
+	}
+
 	customerID := ""
 	if session.Customer != nil {
 		customerID = session.Customer.ID
@@ -233,12 +301,12 @@ func (h *StripeHandler) handleCheckoutCompleted(r *http.Request, event stripe.Ev
 	}
 
 	if subscriptionID != "" && customerID != "" {
-		if err := h.users.ActivateSubscription(r.Context(), customerID, subscriptionID, "active"); err != nil {
+		if err := h.users.ActivateSubscription(r.Context(), customerID, subscriptionID, "active", tier); err != nil {
 			log.Printf("Failed to activate subscription: %v", err)
 		}
 	}
 
-	log.Printf("Checkout completed for user %s, customer %s, subscription %s", userID, customerID, subscriptionID)
+	log.Printf("Checkout completed for user %s, customer %s, subscription %s, tier %s", userID, customerID, subscriptionID, tier)
 }
 
 func (h *StripeHandler) handleSubscriptionUpdated(r *http.Request, event stripe.Event) {
@@ -257,7 +325,7 @@ func (h *StripeHandler) handleSubscriptionUpdated(r *http.Request, event stripe.
 	}
 
 	status := string(sub.Status)
-	if err := h.users.ActivateSubscription(r.Context(), customerID, sub.ID, status); err != nil {
+	if err := h.users.UpdateSubscriptionStatus(r.Context(), customerID, status); err != nil {
 		log.Printf("Failed to update subscription status: %v", err)
 	}
 

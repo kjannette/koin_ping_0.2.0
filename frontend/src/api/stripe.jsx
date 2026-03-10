@@ -1,15 +1,29 @@
 import { getAuthHeaders } from "./authHeaders";
 import { API_BASE } from "./config";
 
-export async function createCheckoutSession() {
+export async function createCheckoutSession(tier = "premium") {
     const headers = await getAuthHeaders();
     const res = await fetch(`${API_BASE}/stripe/create-checkout-session`, {
+        method: "POST",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify({ tier }),
+    });
+    if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed to create checkout session");
+    }
+    return res.json();
+}
+
+export async function activateFreeTier() {
+    const headers = await getAuthHeaders();
+    const res = await fetch(`${API_BASE}/stripe/activate-free`, {
         method: "POST",
         headers,
     });
     if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.message || "Failed to create checkout session");
+        throw new Error(data.message || "Failed to activate free tier");
     }
     return res.json();
 }

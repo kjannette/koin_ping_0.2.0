@@ -1,10 +1,10 @@
 /**
  * AuthContext - Firebase Authentication State Management
  *
- * Provides authentication state and methods throughout the app
+ * Provides authentication state, tier info, and methods throughout the app
  */
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import {
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
@@ -12,8 +12,15 @@ import {
     onAuthStateChanged,
 } from "firebase/auth";
 import { auth } from "../firebase/config";
+import { getAccount } from "../api/account";
 
 const AuthContext = createContext();
+
+const DEFAULT_TIER_LIMITS = {
+    max_addresses: 1,
+    max_alert_types: 1,
+    allowed_channels: ["email"],
+};
 
 /**
  * Hook to access auth context
@@ -28,16 +35,28 @@ export function useAuth() {
 }
 
 /**
- * AuthProvider - Wraps app and provides auth state
+ * AuthProvider - Wraps app and provides auth state + tier info
  */
 export function AuthProvider({ children }) {
     const [currentUser, setCurrentUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    /**
-     * Sign up with email and password
-     */
+    const [userTier, setUserTier] = useState("free");
+    const [tierLimits, setTierLimits] = useState(DEFAULT_TIER_LIMITS);
+    const [addressCount, setAddressCount] = useState(0);
+
+    const refreshAccount = useCallback(async () => {
+        try {
+            const data = await getAccount();
+            setUserTier(data.subscription_tier || "free");
+            setTierLimits(data.tier_limits || DEFAULT_TIER_LIMITS);
+            setAddressCount(data.address_count || 0);
+        } catch {
+            // account fetch can fail during onboarding before subscription is active
+        }
+    }, []);
+
     async function signup(email, password) {
         try {
             setError(null);
@@ -53,9 +72,6 @@ export function AuthProvider({ children }) {
         }
     }
 
-    /**
-     * Log in with email and password
-     */
     async function login(email, password) {
         try {
             setError(null);
@@ -71,12 +87,12 @@ export function AuthProvider({ children }) {
         }
     }
 
-    /**
-     * Log out current user
-     */
     async function logout() {
         try {
             setError(null);
+            setUserTier("free");
+            setTierLimits(DEFAULT_TIER_LIMITS);
+            setAddressCount(0);
             await signOut(auth);
         } catch (err) {
             setError(err.message);
@@ -84,18 +100,16 @@ export function AuthProvider({ children }) {
         }
     }
 
-    /**
-     * Listen for auth state changes
-     */
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             setCurrentUser(user);
             setLoading(false);
+            if (user) {
+                refreshAccount();
+            }
         });
-
-        // Cleanup subscription
         return unsubscribe;
-    }, []);
+    }, [refreshAccount]);
 
     const value = {
         currentUser,
@@ -104,6 +118,10 @@ export function AuthProvider({ children }) {
         logout,
         error,
         loading,
+        userTier,
+        tierLimits,
+        addressCount,
+        refreshAccount,
     };
 
     return (
